@@ -1,0 +1,120 @@
+{
+  "module": {
+    "name": "Employee Management",
+    "code": "employee-mgmt",
+    "description": "Employee management system",
+    "version": "1.0.0"
+  },
+  "entity": {
+    "name": "Employee",
+    "apiPath": "/employee-service/v1",
+    "primaryKey": "employeeId",
+    "displayField": "employeeName"
+  },
+  "screens": {
+    "create": {
+      "enabled": true,
+      "roles": ["ADMIN", "HR_MANAGER"]
+    },
+    "search": {
+      "enabled": true,
+      "roles": ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
+      "filters": ["name", "department", "status"],
+      "minSearchFields": 1
+    },
+    "inbox": {
+      "enabled": true,
+      "roles": ["ADMIN", "HR_MANAGER"]
+    },
+    "view": {
+      "enabled": true,
+      "roles": ["ADMIN", "HR_MANAGER", "EMPLOYEE"]
+    },
+    "response": {
+      "enabled": true,
+      "types": ["basic"]
+    }
+  },
+  "fields": [
+    {
+      "name": "employeeName",
+      "type": "text",
+      "label": "Employee Name",
+      "required": true,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true
+    },
+    {
+      "name": "employeeCode",
+      "type": "text",
+      "label": "Employee Code",
+      "required": true,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true
+    },
+    {
+      "name": "department",
+      "type": "dropdown",
+      "label": "Department",
+      "required": true,
+      "searchable": true,
+      "filterable": true,
+      "showInResults": true,
+      "showInView": true,
+      "options": [
+        { "code": "HR", "name": "Human Resources" },
+        { "code": "IT", "name": "Information Technology" },
+        { "code": "FINANCE", "name": "Finance" },
+        { "code": "ADMIN", "name": "Administration" }
+      ]
+    },
+    {
+      "name": "designation",
+      "type": "text",
+      "label": "Designation",
+      "required": true,
+      "showInView": true
+    },
+    {
+      "name": "joiningDate",
+      "type": "date",
+      "label": "Joining Date",
+      "required": true,
+      "showInView": true
+    },
+    {
+      "name": "status",
+      "type": "dropdown",
+      "label": "Status",
+      "required": true,
+      "filterable": true,
+      "showInResults": true,
+      "showInView": true,
+      "options": [
+        { "code": "ACTIVE", "name": "Active" },
+        { "code": "INACTIVE", "name": "Inactive" },
+        { "code": "ON_LEAVE", "name": "On Leave" }
+      ]
+    }
+  ],
+  "api": {
+    "create": "/employee/_create",
+    "update": "/employee/_update",
+    "search": "/employee/_search",
+    "view": "/employee/{id}"
+  },
+  "auth": {
+    "required": true,
+    "roles": ["ADMIN", "HR_MANAGER", "EMPLOYEE"]
+  },
+  "workflow": {
+    "enabled": true,
+    "businessService": "EMPLOYEE_WORKFLOW"
+  },
+  "i18n": {
+    "prefix": "EMPLOYEE_",
+    "generateKeys": true
+  }
+}

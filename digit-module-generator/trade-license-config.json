@@ -1,0 +1,294 @@
+{
+  "module": {
+    "name": "Trade License Management",
+    "code": "trade-license",
+    "description": "Trade license application and approval management system",
+    "version": "1.0.0"
+  },
+  "entity": {
+    "name": "TradeLicense",
+    "apiPath": "/tl-service/v1",
+    "primaryKey": "applicationNumber",
+    "displayField": "tradeName"
+  },
+  "screens": {
+    "create": {
+      "enabled": true,
+      "roles": ["TL_CEMP", "TL_APPROVER", "CITIZEN"]
+    },
+    "search": {
+      "enabled": true,
+      "roles": ["TL_CEMP", "TL_APPROVER", "TL_DOC_VERIFIER"],
+      "filters": ["applicationNumber", "tradeName", "ownerName", "mobileNumber", "status"],
+      "minSearchFields": 1
+    },
+    "inbox": {
+      "enabled": true,
+      "roles": ["TL_CEMP", "TL_APPROVER", "TL_DOC_VERIFIER"]
+    },
+    "view": {
+      "enabled": true,
+      "roles": ["TL_CEMP", "TL_APPROVER", "TL_DOC_VERIFIER", "CITIZEN"]
+    },
+    "response": {
+      "enabled": true,
+      "types": ["basic"]
+    }
+  },
+  "fields": [
+    {
+      "name": "applicationNumber",
+      "type": "text",
+      "label": "Application Number",
+      "required": false,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true,
+      "editable": false,
+      "validation": {
+        "pattern": "^TL-[0-9]{8}$"
+      }
+    },
+    {
+      "name": "tradeName",
+      "type": "text",
+      "label": "Trade Name",
+      "required": true,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true,
+      "validation": {
+        "minLength": 2,
+        "maxLength": 200
+      }
+    },
+    {
+      "name": "tradeType",
+      "type": "dropdown",
+      "label": "Trade Type",
+      "required": true,
+      "searchable": true,
+      "filterable": true,
+      "showInResults": true,
+      "showInView": true,
+      "mdms": {
+        "masterName": "TradeType",
+        "moduleName": "TradeLicense",
+        "localePrefix": "TRADELICENSE_TRADETYPE_"
+      }
+    },
+    {
+      "name": "tradeSubType",
+      "type": "dropdown",
+      "label": "Trade Sub Type",
+      "required": true,
+      "showInView": true,
+      "mdms": {
+        "masterName": "TradeSubType",
+        "moduleName": "TradeLicense",
+        "localePrefix": "TRADELICENSE_TRADESUBTYPE_"
+      }
+    },
+    {
+      "name": "ownerName",
+      "type": "text",
+      "label": "Owner Name",
+      "required": true,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true,
+      "validation": {
+        "minLength": 2,
+        "maxLength": 100
+      }
+    },
+    {
+      "name": "fatherHusbandName",
+      "type": "text",
+      "label": "Father/Husband Name",
+      "required": true,
+      "showInView": true,
+      "validation": {
+        "minLength": 2,
+        "maxLength": 100
+      }
+    },
+    {
+      "name": "mobileNumber",
+      "type": "mobileNumber",
+      "label": "Mobile Number",
+      "required": true,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true
+    },
+    {
+      "name": "emailId",
+      "type": "email",
+      "label": "Email ID",
+      "required": false,
+      "showInView": true
+    },
+    {
+      "name": "gender",
+      "type": "dropdown",
+      "label": "Gender",
+      "required": true,
+      "showInView": true,
+      "options": [
+        { "code": "MALE", "name": "Male" },
+        { "code": "FEMALE", "name": "Female" },
+        { "code": "TRANSGENDER", "name": "Transgender" }
+      ]
+    },
+    {
+      "name": "dateOfBirth",
+      "type": "date",
+      "label": "Date of Birth",
+      "required": true,
+      "showInView": true
+    },
+    {
+      "name": "tradeAddress",
+      "type": "textarea",
+      "label": "Trade Address",
+      "required": true,
+      "showInView": true,
+      "validation": {
+        "maxLength": 500
+      }
+    },
+    {
+      "name": "locality",
+      "type": "dropdown",
+      "label": "Locality",
+      "required": true,
+      "searchable": true,
+      "filterable": true,
+      "showInResults": true,
+      "showInView": true,
+      "mdms": {
+        "masterName": "Locality",
+        "moduleName": "egov-location",
+        "localePrefix": "LOCALITY_"
+      }
+    },
+    {
+      "name": "operationalArea",
+      "type": "number",
+      "label": "Operational Area (sq ft)",
+      "required": true,
+      "showInView": true,
+      "validation": {
+        "min": 1,
+        "max": 100000
+      }
+    },
+    {
+      "name": "noOfEmployees",
+      "type": "number",
+      "label": "Number of Employees",
+      "required": true,
+      "showInView": true,
+      "validation": {
+        "min": 0,
+        "max": 1000
+      }
+    },
+    {
+      "name": "commencementDate",
+      "type": "date",
+      "label": "Commencement Date",
+      "required": true,
+      "showInView": true
+    },
+    {
+      "name": "financialYear",
+      "type": "text",
+      "label": "Financial Year",
+      "required": true,
+      "showInView": true,
+      "validation": {
+        "pattern": "^[0-9]{4}-[0-9]{2}$"
+      }
+    },
+    {
+      "name": "validFrom",
+      "type": "date",
+      "label": "Valid From",
+      "required": true,
+      "showInView": true
+    },
+    {
+      "name": "validTo",
+      "type": "date",
+      "label": "Valid To",
+      "required": true,
+      "showInView": true
+    },
+    {
+      "name": "licenseType",
+      "type": "dropdown",
+      "label": "License Type",
+      "required": true,
+      "showInResults": true,
+      "showInView": true,
+      "options": [
+        { "code": "PERMANENT", "name": "Permanent" },
+        { "code": "TEMPORARY", "name": "Temporary" }
+      ]
+    },
+    {
+      "name": "status",
+      "type": "dropdown",
+      "label": "Application Status",
+      "required": true,
+      "searchable": true,
+      "filterable": true,
+      "showInResults": true,
+      "showInView": true,
+      "editable": false,
+      "options": [
+        { "code": "INITIATED", "name": "Initiated" },
+        { "code": "APPLIED", "name": "Applied" },
+        { "code": "FIELDINSPECTION", "name": "Field Inspection" },
+        { "code": "PENDINGAPPROVAL", "name": "Pending Approval" },
+        { "code": "APPROVED", "name": "Approved" },
+        { "code": "REJECTED", "name": "Rejected" },
+        { "code": "CANCELLED", "name": "Cancelled" },
+        { "code": "MANUALLYEXPIRED", "name": "Manually Expired" }
+      ]
+    },
+    {
+      "name": "licenseNumber",
+      "type": "text",
+      "label": "License Number",
+      "required": false,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true,
+      "editable": false,
+      "validation": {
+        "pattern": "^TL/[0-9]{4}-[0-9]{2}/[A-Z]{2}/[0-9]+$"
+      }
+    }
+  ],
+  "api": {
+    "create": "/tl-services/v1/_create",
+    "update": "/tl-services/v1/_update",
+    "search": "/tl-services/v1/_search",
+    "view": "/tl-services/v1/_search"
+  },
+  "auth": {
+    "required": true,
+    "roles": ["TL_CEMP", "TL_APPROVER", "TL_DOC_VERIFIER", "CITIZEN"]
+  },
+  "workflow": {
+    "enabled": true,
+    "businessService": "TL"
+  },
+  "i18n": {
+    "prefix": "TL_",
+    "generateKeys": true
+  }
+}

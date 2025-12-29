@@ -1,0 +1,148 @@
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate, useLocation } from "react-router-dom";
+import { PanelCard, InfoCard, Button } from "@egovernments/digit-ui-components";
+
+const {{pascalCase config.entity.name}}Response = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [responseData, setResponseData] = useState(null);
+
+  useEffect(() => {
+    if (location.state?.isSuccess && location.state?.data) {
+      setResponseData(location.state.data);
+    } else if (!location.state) {
+      // Redirect if no state data
+      navigate(`/employee/{{kebabCase config.module.code}}/search`);
+    }
+  }, [location.state]);
+
+  const isResponseSuccess = location.state?.isSuccess || false;
+  const entityNumber = responseData?.{{config.entity.primaryKey}} || responseData?.referenceNumber;
+  const entityId = responseData?.id || responseData?.{{config.entity.primaryKey}};
+
+  const handleNavigation = (type) => {
+    const moduleCode = "{{kebabCase config.module.code}}";
+    
+    switch (type) {
+      case "home":
+        navigate("/employee");
+        break;
+      case "view":
+        if (entityId) {
+          navigate(`/employee/${moduleCode}/view/${entityId}`);
+        }
+        break;
+      case "search":
+        navigate(`/employee/${moduleCode}/search`);
+        break;
+      case "create":
+        navigate(`/employee/${moduleCode}/create`);
+        break;
+      default:
+        navigate("/employee");
+    }
+  };
+
+  const getSuccessMessage = () => {
+    return t("{{toLocalizationKey 'CREATED_SUCCESSFULLY' config.i18n.prefix}}", {
+      entityNumber: entityNumber || ""
+    });
+  };
+
+  const getErrorMessage = () => {
+    return t("{{toLocalizationKey 'CREATION_FAILED' config.i18n.prefix}}");
+  };
+
+  // Main content for PanelCard
+  const children = [
+    <InfoCard
+      variant={isResponseSuccess ? "success" : "error"}
+      className={"{{kebabCase config.entity.name}}-response-infocard"}
+      text={isResponseSuccess ? getSuccessMessage() : getErrorMessage()}
+    />,
+    
+    // Additional details if success
+    isResponseSuccess && responseData && (
+      <InfoCard
+        variant="default"
+        className={"{{kebabCase config.entity.name}}-details-infocard"}
+        text={
+          <div>
+            {entityNumber && (
+              <p><strong>{t("{{toLocalizationKey 'REFERENCE_NUMBER' config.i18n.prefix}}")}:</strong> {entityNumber}</p>
+            )}
+            {{#if config.entity.displayField}}
+            {responseData["{{config.entity.displayField}}"] && (
+              <p><strong>{t("{{toLocalizationKey config.entity.displayField config.i18n.prefix}}")}:</strong> {responseData["{{config.entity.displayField}}"]}</p>
+            )}
+            {{/if}}
+            {responseData.status && (
+              <p><strong>{t("{{toLocalizationKey 'STATUS' config.i18n.prefix}}")}:</strong> {t(`{{config.i18n.prefix}}STATUS_${responseData.status}`)}</p>
+            )}
+            {{#if config.workflow.enabled}}
+            {responseData.assignedTo && (
+              <p><strong>{t("ES_COMMON_ASSIGNED_TO")}:</strong> {responseData.assignedTo}</p>
+            )}
+            {{/if}}
+          </div>
+        }
+      />
+    )
+  ].filter(Boolean);
+
+  // Footer buttons for PanelCard
+  const footerChildren = [
+    <Button
+      type={"button"}
+      size={"large"}
+      variation={"secondary"}
+      label={t("CORE_COMMON_GO_TO_HOME")}
+      onClick={() => handleNavigation("home")}
+    />,
+    
+    <Button
+      type={"button"}
+      size={"large"}
+      variation={"secondary"}
+      label={t("{{toLocalizationKey 'GO_TO_SEARCH' config.i18n.prefix}}")}
+      onClick={() => handleNavigation("search")}
+    />,
+
+    // Show view button only on success and if we have an entity ID
+    isResponseSuccess && entityId && (
+      <Button
+        type={"button"}
+        size={"large"}
+        variation={"secondary"}
+        label={t("{{toLocalizationKey 'VIEW_DETAILS' config.i18n.prefix}}")}
+        onClick={() => handleNavigation("view")}
+      />
+    ),
+
+    // Show create another button only on success
+    isResponseSuccess && (
+      <Button
+        type={"button"}
+        size={"large"}
+        variation={"primary"}
+        label={t("{{toLocalizationKey 'CREATE_ANOTHER' config.i18n.prefix}}")}
+        onClick={() => handleNavigation("create")}
+      />
+    )
+  ].filter(Boolean);
+
+  return (
+    <PanelCard
+      type={isResponseSuccess ? "success" : "error"}
+      children={children}
+      footerChildren={footerChildren}
+      maxFooterButtonsAllowed={5}
+      message={isResponseSuccess ? t("{{toLocalizationKey 'SUCCESS_HEADER' config.i18n.prefix}}") : t("{{toLocalizationKey 'ERROR_HEADER' config.i18n.prefix}}")}
+      sortFooterButtons={true}
+    />
+  );
+};
+
+export default {{pascalCase config.entity.name}}Response;

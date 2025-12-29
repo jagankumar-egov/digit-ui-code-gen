@@ -1,0 +1,25 @@
+import { InboxSearchComposer } from "@egovernments/digit-ui-components";
+
+import React from "react";
+import { searchConfig } from "../../configs/{{entity.name}}SearchConfig";
+
+const {{entity.name}}Search = () => {
+  const tenantId = Digit.ULBService.getCurrentTenantId();
+  const stateCode = Digit.ULBService.getStateId();
+  const userType = "employee";
+  const moduleCode = "{{constantCase module.code}}";
+
+  return (
+    <InboxSearchComposer
+      {...{
+        stateCode,
+        userType,
+        tenantId,
+        moduleCode,
+        config: searchConfig,
+      }}
+    />
+  );
+};
+
+export default {{entity.name}}Search;

@@ -1,0 +1,90 @@
+import { FormComposerV2 } from "@egovernments/digit-ui-components";
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { config as CreateConfig } from "../../configs/{{entity.name}}CreateConfig";
+import { 
+  transform{{entity.name}}CreateData, 
+  validateTransformedData,
+  commonTransformations 
+} from "../../utils/createUtils";
+import { 
+  navigateToResponse,
+  formatSuccessResponse,
+  formatErrorResponse 
+} from "../../utils/responseUtils";
+
+const {{entity.name}}Create = () => {
+  const tenantId = Digit.ULBService.getCurrentTenantId();
+  const userInfo = Digit.UserService.getUser()?.info;
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  
+  // API mutation hook
+  const { mutate: create{{entity.name}}, isLoading } = Digit.Hooks.useCustomAPIMutationHook({
+    url: "{{entity.apiPath}}{{api.create}}",
+    method: "POST",
+    onSuccess: (response) => {
+      const successData = formatSuccessResponse(response, "{{entity.name}}", "{{constantCase entity.name}}_CREATED_SUCCESSFULLY");
+      navigateToResponse(navigate, true, successData.responseData, successData.message, "basic");
+    },
+    onError: (error) => {
+      const errorData = formatErrorResponse(error, "{{constantCase entity.name}}_CREATION_FAILED");
+      navigateToResponse(navigate, false, {}, errorData.error, "basic");
+    }
+  });
+
+  const onSubmit = (formData) => {
+    try {
+      // Transform form data to API format
+      const transformedData = transform{{entity.name}}CreateData(formData, tenantId, userInfo);
+      
+      // Validate transformed data
+      const validation = validateTransformedData(transformedData, [
+{{#each fields}}
+{{#if required}}
+        '{{name}}',
+{{/if}}
+{{/each}}
+      ]);
+      
+      if (!validation.isValid) {
+        validation.errors.forEach(error => {
+          Digit.Utils.toast.error(error);
+        });
+        return;
+      }
+      
+      // Call API
+      create{{entity.name}}(transformedData);
+      
+    } catch (error) {
+      console.error("Transform error:", error);
+      Digit.Utils.toast.error("Failed to process form data");
+    }
+  };
+
+  return (
+    <FormComposerV2
+      heading={t("{{i18n.prefix}}CREATE_HEADING")}
+      label={t("{{i18n.prefix}}SUBMIT")}
+      description={t("{{i18n.prefix}}CREATE_DESCRIPTION")}
+      config={CreateConfig.map((config) => {
+        return {
+          ...config,
+          body: config.body.filter((field) => !field.hideInEmployee),
+        };
+      })}
+      defaultValues={{}}
+      onSubmit={onSubmit}
+      isSubmitLoading={isLoading}
+      fieldStyle={{ marginRight: 0 }}
+{{#if workflow.enabled}}
+      showWf={true}
+      wfKey="{{workflow.businessService}}"
+{{/if}}
+    />
+  );
+};
+
+export default {{entity.name}}Create;

@@ -1,0 +1,59 @@
+import React, { useState } from "react";
+import { FormComposerV2 } from "@egovernments/digit-ui-components";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useCreate{{pascalCase config.entity.name}}, transformCreate{{pascalCase config.entity.name}}Data } from "../../hooks/use{{pascalCase config.entity.name}}";
+import { {{camelCase config.entity.name}}CreateConfig } from "../../configs/{{pascalCase config.entity.name}}CreateConfig";
+
+const {{pascalCase config.entity.name}}Create = () => {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const [formData, setFormData] = useState({});
+  const tenantId = Digit.ULBService.getCurrentTenantId();
+  const user = Digit.UserService.getUser()?.info;
+
+  const createMutation = useCreate{{pascalCase config.entity.name}}();
+
+  const onSubmit = async (data) => {
+    try {
+      // Transform form data for API
+      const transformedData = transformCreate{{pascalCase config.entity.name}}Data(data, tenantId, user);
+      
+      // Submit using the mutation hook
+      await createMutation.mutate({
+        url: "{{config.api.create}}",
+        params: { tenantId },
+        body: transformedData,
+        config: {
+          enable: true,
+        },
+      });
+      
+      // Navigate to success page
+      navigate(`/employee/{{kebabCase config.module.code}}/response`, {
+        state: {
+          isSuccess: true,
+          data: transformedData.{{config.entity.name}}
+        }
+      });
+      
+    } catch (error) {
+      console.error("Create error:", error);
+    }
+  };
+
+  return (
+    <div className="create-screen-container">
+      <FormComposerV2
+        label={t("{{toLocalizationKey 'SUBMIT' config.i18n.prefix}}")}
+        config={ {{camelCase config.entity.name}}CreateConfig}
+        onSubmit={onSubmit}
+        defaultValues={formData}
+        onFormValueChange={(formData) => setFormData(formData)}
+        isLoading={createMutation.isLoading}
+      />
+    </div>
+  );
+};
+
+export default {{pascalCase config.entity.name}}Create;

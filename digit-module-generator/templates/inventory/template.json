@@ -1,0 +1,278 @@
+{
+  "name": "Inventory Management Template",
+  "description": "Inventory management system template for tracking stock and assets",
+  "version": "1.0.0",
+  "author": "JaganKumar <jagan.kumar@egov.org.in>",
+  "category": "inventory",
+  "config": {
+    "module": {
+      "name": "Inventory Management",
+      "code": "inventory-mgmt",
+      "description": "Asset and inventory management system",
+      "version": "1.0.0"
+    },
+    "entity": {
+      "name": "Asset",
+      "apiPath": "/asset-service/v1",
+      "primaryKey": "assetId",
+      "displayField": "assetName"
+    },
+    "screens": {
+      "create": {
+        "enabled": true,
+        "roles": ["ASSET_ADMIN", "INVENTORY_MANAGER"],
+        "workflow": false
+      },
+      "search": {
+        "enabled": true,
+        "roles": ["ASSET_ADMIN", "ASSET_VIEWER", "INVENTORY_MANAGER"],
+        "filters": ["assetCategory", "status", "location", "purchaseDateRange"],
+        "minSearchFields": 1,
+        "showFooter": true
+      },
+      "inbox": {
+        "enabled": false
+      },
+      "view": {
+        "enabled": true,
+        "roles": ["ASSET_ADMIN", "ASSET_VIEWER", "INVENTORY_MANAGER"],
+        "sections": ["basic", "financial", "location", "maintenance", "documents"]
+      },
+      "response": {
+        "enabled": true,
+        "types": ["basic"]
+      }
+    },
+    "fields": [
+      {
+        "name": "assetCode",
+        "type": "text",
+        "label": "Asset Code",
+        "required": true,
+        "searchable": true,
+        "showInResults": true,
+        "showInView": true,
+        "validation": {
+          "pattern": "^AST[0-9]{6}$",
+          "maxLength": 9
+        }
+      },
+      {
+        "name": "assetName",
+        "type": "text",
+        "label": "Asset Name",
+        "required": true,
+        "searchable": true,
+        "showInResults": true,
+        "showInView": true,
+        "validation": {
+          "maxLength": 200
+        }
+      },
+      {
+        "name": "assetDescription",
+        "type": "textarea",
+        "label": "Description",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "maxLength": 500
+        }
+      },
+      {
+        "name": "assetCategory",
+        "type": "dropdown",
+        "label": "Asset Category",
+        "required": true,
+        "searchable": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "mdms": {
+          "masterName": "AssetCategory",
+          "moduleName": "asset-masters",
+          "localePrefix": "ASSET_CATEGORY_"
+        }
+      },
+      {
+        "name": "assetSubCategory",
+        "type": "dropdown",
+        "label": "Sub Category",
+        "required": true,
+        "showInView": true,
+        "mdms": {
+          "masterName": "AssetSubCategory",
+          "moduleName": "asset-masters",
+          "localePrefix": "ASSET_SUBCATEGORY_"
+        }
+      },
+      {
+        "name": "assetStatus",
+        "type": "dropdown",
+        "label": "Status",
+        "required": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "options": [
+          { "code": "ACTIVE", "name": "Active" },
+          { "code": "INACTIVE", "name": "Inactive" },
+          { "code": "UNDER_MAINTENANCE", "name": "Under Maintenance" },
+          { "code": "DISPOSED", "name": "Disposed" },
+          { "code": "LOST", "name": "Lost/Damaged" }
+        ]
+      },
+      {
+        "name": "purchaseDate",
+        "type": "date",
+        "label": "Purchase Date",
+        "required": true,
+        "showInView": true
+      },
+      {
+        "name": "purchasePrice",
+        "type": "amount",
+        "label": "Purchase Price",
+        "required": true,
+        "showInResults": true,
+        "showInView": true,
+        "validation": {
+          "min": 0,
+          "max": 10000000
+        }
+      },
+      {
+        "name": "currentValue",
+        "type": "amount",
+        "label": "Current Value",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "min": 0,
+          "max": 10000000
+        }
+      },
+      {
+        "name": "vendor",
+        "type": "text",
+        "label": "Vendor/Supplier",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "maxLength": 200
+        }
+      },
+      {
+        "name": "serialNumber",
+        "type": "text",
+        "label": "Serial Number",
+        "required": false,
+        "searchable": true,
+        "showInView": true,
+        "validation": {
+          "maxLength": 50
+        }
+      },
+      {
+        "name": "modelNumber",
+        "type": "text",
+        "label": "Model Number",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "maxLength": 50
+        }
+      },
+      {
+        "name": "location",
+        "type": "dropdown",
+        "label": "Current Location",
+        "required": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "mdms": {
+          "masterName": "AssetLocation",
+          "moduleName": "asset-masters",
+          "localePrefix": "ASSET_LOCATION_"
+        }
+      },
+      {
+        "name": "ward",
+        "type": "locationdropdown",
+        "label": "Ward",
+        "required": false,
+        "filterable": true,
+        "showInView": true,
+        "locationtype": "ward"
+      },
+      {
+        "name": "custodian",
+        "type": "radioordropdown",
+        "label": "Custodian",
+        "required": false,
+        "showInView": true,
+        "key": "custodian"
+      },
+      {
+        "name": "warrantyExpiryDate",
+        "type": "date",
+        "label": "Warranty Expiry Date",
+        "required": false,
+        "showInView": true
+      },
+      {
+        "name": "depreciationRate",
+        "type": "number",
+        "label": "Depreciation Rate (%)",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "min": 0,
+          "max": 100
+        }
+      },
+      {
+        "name": "maintenanceSchedule",
+        "type": "dropdown",
+        "label": "Maintenance Schedule",
+        "required": false,
+        "showInView": true,
+        "options": [
+          { "code": "MONTHLY", "name": "Monthly" },
+          { "code": "QUARTERLY", "name": "Quarterly" },
+          { "code": "HALF_YEARLY", "name": "Half Yearly" },
+          { "code": "YEARLY", "name": "Yearly" }
+        ]
+      },
+      {
+        "name": "lastMaintenanceDate",
+        "type": "date",
+        "label": "Last Maintenance Date",
+        "required": false,
+        "showInView": true
+      }
+    ],
+    "api": {
+      "create": "/asset/_create",
+      "update": "/asset/_update",
+      "search": "/asset/_search",
+      "view": "/asset/{id}"
+    },
+    "auth": {
+      "required": true,
+      "roles": ["ASSET_ADMIN", "ASSET_VIEWER", "INVENTORY_MANAGER"]
+    },
+    "workflow": {
+      "enabled": false
+    },
+    "documents": {
+      "enabled": true,
+      "types": ["PURCHASE_BILL", "WARRANTY_CARD", "INSURANCE_DOCUMENTS", "MAINTENANCE_RECORDS"]
+    },
+    "i18n": {
+      "prefix": "ASSET_",
+      "generateKeys": true
+    }
+  }
+}

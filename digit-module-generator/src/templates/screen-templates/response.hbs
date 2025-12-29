@@ -1,0 +1,172 @@
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { 
+  Banner, 
+  Card, 
+  LinkLabel, 
+  ArrowLeftWhite, 
+  ActionBar, 
+  Button
+} from "@egovernments/digit-ui-react-components";
+
+const {{entity.name}}Response = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const queryStrings = Digit.Hooks.useQueryParams();
+  const { state } = useLocation();
+  
+  // Determine success/failure from URL params or state
+  const [isResponseSuccess, setIsResponseSuccess] = useState(
+    queryStrings?.isSuccess === "true" ? true : 
+    queryStrings?.isSuccess === "false" ? false : 
+    state?.isSuccess !== undefined ? state.isSuccess : true
+  );
+
+  // Extract data from navigation state
+  const responseData = state?.responseData || {};
+  const entityId = responseData?.id || queryStrings?.id;
+  const entityNumber = responseData?.{{entity.displayField}} || responseData?.entityNumber;
+
+  const handleNavigation = (page) => {
+    switch (page) {
+      case "home":
+        navigate(`/${window.contextPath}/employee`);
+        break;
+      case "view":
+        if (entityId) {
+          navigate(`/${window.contextPath}/employee/{{kebabCase module.code}}/view/${entityId}`);
+        }
+        break;
+      case "search":
+        navigate(`/${window.contextPath}/employee/{{kebabCase module.code}}/search`);
+        break;
+      case "create":
+        navigate(`/${window.contextPath}/employee/{{kebabCase module.code}}/create`);
+        break;
+      default:
+        navigate(`/${window.contextPath}/employee`);
+    }
+  };
+
+  // Success message configuration
+  const getSuccessMessage = () => {
+    return state?.message || t("{{i18n.prefix}}CREATED_SUCCESSFULLY");
+  };
+
+  // Error message configuration  
+  const getErrorMessage = () => {
+    return state?.error || t("{{i18n.prefix}}CREATION_FAILED");
+  };
+
+  // Additional info to display
+  const getAdditionalInfo = () => {
+    if (isResponseSuccess && entityNumber) {
+      return \`\${t("{{i18n.prefix}}NUMBER")}: \${entityNumber}\`;
+    }
+    return state?.additionalInfo || "";
+  };
+
+  return (
+    <Card>
+      <Banner
+        successful={isResponseSuccess}
+        message={isResponseSuccess ? getSuccessMessage() : getErrorMessage()}
+        info={getAdditionalInfo()}
+        whichSvg={isResponseSuccess ? "tick" : "error"}
+        headerStyles={{ fontSize: "32px" }}
+        style=\{{ minWidth: "100%" }}
+      />
+      
+      {/* Additional Details Section */}
+      {isResponseSuccess && responseData && (
+        <div style=\{{ marginTop: "2rem", marginBottom: "2rem" \}}>
+          <h3>{t("ES_COMMON_DETAILS")}</h3>
+          <div style=\{{ display: "flex", flexDirection: "column", gap: "0.5rem" \}}>
+            {entityNumber && (
+              <p><strong>{t("{{i18n.prefix}}REFERENCE_NUMBER")}:</strong> {entityNumber}</p>
+            )}
+            {responseData.submittedDate && (
+              <p><strong>{t("{{i18n.prefix}}SUBMITTED_DATE")}:</strong> {new Date(responseData.submittedDate).toLocaleDateString()}</p>
+            )}
+            {responseData.status && (
+              <p><strong>{t("ES_COMMON_STATUS")}:</strong> {t(responseData.status)}</p>
+            )}
+            {responseData.assignedTo && (
+              <p><strong>{t("ES_COMMON_ASSIGNED_TO")}:</strong> {responseData.assignedTo}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Navigation Links */}
+      <div style=\{{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "2rem" \}}>
+        <LinkLabel 
+          style=\{{ display: "flex", alignItems: "center" }} 
+          onClick={() => handleNavigation("home")}
+        >
+          <ArrowLeftWhite fill="#F47738" style=\{{ marginRight: "8px" }} />
+          {t("CORE_COMMON_GO_TO_HOME")}
+        </LinkLabel>
+        
+        {isResponseSuccess && entityId && (
+          <LinkLabel 
+            style=\{{ display: "flex", alignItems: "center", marginLeft: "1rem" }} 
+            onClick={() => handleNavigation("view")}
+          >
+            {t("{{i18n.prefix}}VIEW_DETAILS")}
+          </LinkLabel>
+        )}
+        
+        <LinkLabel 
+          style=\{{ display: "flex", alignItems: "center", marginLeft: "1rem" }} 
+          onClick={() => handleNavigation("search")}
+        >
+          {t("{{i18n.prefix}}SEARCH")}
+        </LinkLabel>
+        
+        {isResponseSuccess && (
+          <LinkLabel 
+            style=\{{ display: "flex", alignItems: "center", marginLeft: "1rem" }} 
+            onClick={() => handleNavigation("create")}
+          >
+            {t("{{i18n.prefix}}CREATE_ANOTHER")}
+          </LinkLabel>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <ActionBar>
+        <Button
+          type="button"
+          size="large"
+          variation="secondary"
+          label={t("CORE_COMMON_GO_TO_HOME")}
+          onClick={() => handleNavigation("home")}
+        />
+        
+        {isResponseSuccess && entityId && (
+          <Button
+            type="button"
+            size="large"
+            variation="primary"
+            label={t("{{i18n.prefix}}VIEW_DETAILS")}
+            onClick={() => handleNavigation("view")}
+          />
+        )}
+        
+        {!isResponseSuccess && (
+          <Button
+            type="button"
+            size="large"
+            variation="primary"
+            label={t("ES_COMMON_TRY_AGAIN")}
+            onClick={() => window.history.back()}
+          />
+        )}
+      </ActionBar>
+    </Card>
+  );
+};
+
+export default {{entity.name}}Response;

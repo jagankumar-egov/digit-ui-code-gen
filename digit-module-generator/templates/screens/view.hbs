@@ -1,0 +1,104 @@
+import React, { Fragment } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate, useParams } from "react-router-dom";
+import { Header, ViewComposer } from "@egovernments/digit-ui-react-components";
+import { Loader, HeaderComponent } from "@egovernments/digit-ui-components";
+
+const {{pascalCase config.entity.name}}ViewDetails = (props) => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const tenantId = Digit.ULBService.getCurrentTenantId();
+
+  const reqCriteria = {
+    url: "{{config.api.search}}",
+    params: {
+      tenantId: tenantId,
+      limit: 10,
+      offset: 0,
+    },
+    body: {
+      {{config.entity.name}}SearchCriteria: {
+        tenantId,
+        {{#if config.entity.primaryKey}}
+        {{config.entity.primaryKey}}: [id],
+        {{else}}
+        id: [id],
+        {{/if}}
+      },
+    },
+    config: {
+      select: (data) => {
+        const response = data?.{{config.entity.name}}s?.[0] || {};
+        return {
+          cards: [
+            {
+              sections: [
+                {
+                  type: "DATA",
+                  cardHeader: { value: t("{{toLocalizationKey config.entity.name config.i18n.prefix}}_DETAILS"), inlineStyles: { marginTop: 0, fontSize: "1.5rem" } },
+                  values: [
+                    {{#each config.fields}}
+                    {{#if showInView}}
+                    {
+                      key: "{{toLocalizationKey name ../config.i18n.prefix}}",
+                      value: response?.{{name}} ? response?.{{name}} : t("NA"),
+                    },
+                    {{/if}}
+                    {{/each}}
+                  ],
+                },
+              ],
+            },
+            {{#if config.workflow.enabled}}
+            {
+              name: "workflow",
+              sections: [
+                {
+                  cardHeader: { value: t("{{toLocalizationKey 'WORKFLOW' config.i18n.prefix}}_DETAILS"), inlineStyles: { marginTop: 0, fontSize: "1.5rem" } },
+                  name: "workflow",
+                  type: "DATA",
+                  values: [
+                    {
+                      key: "{{toLocalizationKey 'STATUS' config.i18n.prefix}}",
+                      value: response?.applicationStatus ? t(`{{config.i18n.prefix}}STATUS_\${response.applicationStatus}`) : t("NA"),
+                    },
+                    {
+                      key: "{{toLocalizationKey 'ASSIGNEE' config.i18n.prefix}}",
+                      value: response?.assignee?.name ? response?.assignee?.name : t("NA"),
+                    },
+                    {
+                      key: "{{toLocalizationKey 'CREATED_DATE' config.i18n.prefix}}",
+                      value: response?.auditDetails?.createdTime ? new Date(response.auditDetails.createdTime).toLocaleDateString() : t("NA"),
+                    },
+                    {
+                      key: "{{toLocalizationKey 'MODIFIED_DATE' config.i18n.prefix}}",
+                      value: response?.auditDetails?.lastModifiedTime ? new Date(response.auditDetails.lastModifiedTime).toLocaleDateString() : t("NA"),
+                    },
+                  ],
+                },
+              ],
+            },
+            {{/if}}
+          ],
+        };
+      },
+    },
+  };
+
+  const { isLoading, data } = Digit.Hooks.useCustomAPIHook(reqCriteria);
+
+  if (isLoading) {
+    return <Loader page={true} variant={"PageLoader"} />;
+  }
+
+  return (
+    <>
+      <div className="{{kebabCase config.entity.name}}-summary-container">
+        <ViewComposer data={data} />
+      </div>
+    </>
+  );
+};
+
+export default {{pascalCase config.entity.name}}ViewDetails;

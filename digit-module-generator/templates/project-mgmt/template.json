@@ -1,0 +1,314 @@
+{
+  "name": "Project Management Template",
+  "description": "Project management system template for tracking projects and resources",
+  "version": "1.0.0",
+  "author": "JaganKumar <jagan.kumar@egov.org.in>",
+  "category": "project-management",
+  "config": {
+    "module": {
+      "name": "Project Management",
+      "code": "project-mgmt",
+      "description": "Comprehensive project management and tracking system",
+      "version": "1.0.0"
+    },
+    "entity": {
+      "name": "Project",
+      "apiPath": "/project-service/v1",
+      "primaryKey": "projectId",
+      "displayField": "projectName"
+    },
+    "screens": {
+      "create": {
+        "enabled": true,
+        "roles": ["PROJECT_ADMIN", "PROJECT_MANAGER"],
+        "workflow": true
+      },
+      "search": {
+        "enabled": true,
+        "roles": ["PROJECT_ADMIN", "PROJECT_VIEWER", "PROJECT_MANAGER"],
+        "filters": ["projectType", "status", "priority", "dateRange"],
+        "minSearchFields": 1,
+        "showFooter": true
+      },
+      "inbox": {
+        "enabled": true,
+        "roles": ["PROJECT_ADMIN", "PROJECT_MANAGER"],
+        "businessService": "project-approval"
+      },
+      "view": {
+        "enabled": true,
+        "roles": ["PROJECT_ADMIN", "PROJECT_VIEWER", "PROJECT_MANAGER"],
+        "sections": ["basic", "financial", "timeline", "resources", "documents", "workflow"]
+      },
+      "response": {
+        "enabled": true,
+        "types": ["basic", "workflow"]
+      }
+    },
+    "fields": [
+      {
+        "name": "projectNumber",
+        "type": "text",
+        "label": "Project Number",
+        "required": true,
+        "searchable": true,
+        "showInResults": true,
+        "showInView": true,
+        "showInInboxResults": true,
+        "validation": {
+          "pattern": "^PROJ[0-9]{6}$",
+          "maxLength": 10
+        }
+      },
+      {
+        "name": "projectName",
+        "type": "text",
+        "label": "Project Name",
+        "required": true,
+        "searchable": true,
+        "showInResults": true,
+        "showInView": true,
+        "showInInboxResults": true,
+        "validation": {
+          "maxLength": 200
+        }
+      },
+      {
+        "name": "projectDescription",
+        "type": "textarea",
+        "label": "Project Description",
+        "required": true,
+        "showInView": true,
+        "validation": {
+          "maxLength": 1000
+        }
+      },
+      {
+        "name": "projectType",
+        "type": "dropdown",
+        "label": "Project Type",
+        "required": true,
+        "searchable": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "showInInboxResults": true,
+        "mdms": {
+          "masterName": "ProjectType",
+          "moduleName": "project-masters",
+          "localePrefix": "PROJECT_TYPE_"
+        }
+      },
+      {
+        "name": "priority",
+        "type": "dropdown",
+        "label": "Priority",
+        "required": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "options": [
+          { "code": "HIGH", "name": "High" },
+          { "code": "MEDIUM", "name": "Medium" },
+          { "code": "LOW", "name": "Low" }
+        ]
+      },
+      {
+        "name": "status",
+        "type": "dropdown",
+        "label": "Status",
+        "required": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "options": [
+          { "code": "DRAFT", "name": "Draft" },
+          { "code": "SUBMITTED", "name": "Submitted" },
+          { "code": "APPROVED", "name": "Approved" },
+          { "code": "IN_PROGRESS", "name": "In Progress" },
+          { "code": "COMPLETED", "name": "Completed" },
+          { "code": "CANCELLED", "name": "Cancelled" }
+        ]
+      },
+      {
+        "name": "startDate",
+        "type": "date",
+        "label": "Start Date",
+        "required": true,
+        "showInView": true
+      },
+      {
+        "name": "endDate",
+        "type": "date",
+        "label": "End Date",
+        "required": true,
+        "showInView": true
+      },
+      {
+        "name": "estimatedCost",
+        "type": "amount",
+        "label": "Estimated Cost",
+        "required": true,
+        "showInResults": true,
+        "showInView": true,
+        "validation": {
+          "min": 0,
+          "max": 100000000
+        }
+      },
+      {
+        "name": "actualCost",
+        "type": "amount",
+        "label": "Actual Cost",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "min": 0,
+          "max": 100000000
+        }
+      },
+      {
+        "name": "projectManager",
+        "type": "radioordropdown",
+        "label": "Project Manager",
+        "required": true,
+        "showInResults": true,
+        "showInView": true,
+        "key": "projectManager"
+      },
+      {
+        "name": "department",
+        "type": "dropdown",
+        "label": "Implementing Department",
+        "required": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "mdms": {
+          "masterName": "Department",
+          "moduleName": "common-masters",
+          "localePrefix": "COMMON_DEPARTMENT_"
+        }
+      },
+      {
+        "name": "ward",
+        "type": "locationdropdown",
+        "label": "Ward",
+        "required": false,
+        "filterable": true,
+        "showInView": true,
+        "locationtype": "ward",
+        "multiSelect": true
+      },
+      {
+        "name": "beneficiaryCount",
+        "type": "number",
+        "label": "Expected Beneficiaries",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "min": 0,
+          "max": 1000000
+        }
+      },
+      {
+        "name": "fundingSource",
+        "type": "dropdown",
+        "label": "Funding Source",
+        "required": true,
+        "showInView": true,
+        "options": [
+          { "code": "CENTRAL_GOVT", "name": "Central Government" },
+          { "code": "STATE_GOVT", "name": "State Government" },
+          { "code": "LOCAL_BODY", "name": "Local Body" },
+          { "code": "PRIVATE", "name": "Private" },
+          { "code": "INTERNATIONAL", "name": "International Aid" }
+        ]
+      },
+      {
+        "name": "geoLocation",
+        "type": "text",
+        "label": "Geo Location",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "maxLength": 100
+        }
+      },
+      {
+        "name": "milestones",
+        "type": "component",
+        "label": "Project Milestones",
+        "component": "ProjectMilestonesComponent",
+        "key": "milestones"
+      }
+    ],
+    "api": {
+      "create": "/project/_create",
+      "update": "/project/_update",
+      "search": "/project/_search",
+      "view": "/project/{id}",
+      "workflow": "/workflow/_transition"
+    },
+    "auth": {
+      "required": true,
+      "roles": ["PROJECT_ADMIN", "PROJECT_VIEWER", "PROJECT_MANAGER"]
+    },
+    "workflow": {
+      "enabled": true,
+      "businessService": "project-approval"
+    },
+    "documents": {
+      "enabled": true,
+      "types": ["PROJECT_PROPOSAL", "BUDGET_ESTIMATE", "TECHNICAL_DRAWINGS", "APPROVAL_DOCUMENTS"]
+    },
+    "i18n": {
+      "prefix": "PROJ_",
+      "generateKeys": true
+    },
+    "additionalSections": [
+      {
+        "head": "Financial Details",
+        "body": [
+          {
+            "name": "budgetHead",
+            "type": "dropdown",
+            "label": "Budget Head",
+            "key": "budgetHead",
+            "required": true,
+            "mdms": {
+              "masterName": "BudgetHead",
+              "moduleName": "finance-masters",
+              "localePrefix": "BUDGET_HEAD_"
+            }
+          },
+          {
+            "name": "sanctionedAmount",
+            "type": "amount",
+            "label": "Sanctioned Amount",
+            "required": true
+          }
+        ]
+      },
+      {
+        "head": "Resource Allocation",
+        "body": [
+          {
+            "name": "humanResources",
+            "type": "component",
+            "label": "Human Resources",
+            "component": "ResourceAllocationComponent",
+            "key": "humanResources"
+          },
+          {
+            "name": "equipment",
+            "type": "component",
+            "label": "Equipment Required",
+            "component": "EquipmentComponent",
+            "key": "equipment"
+          }
+        ]
+      }
+    ]
+  }
+}

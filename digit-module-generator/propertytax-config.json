@@ -1,0 +1,230 @@
+{
+  "module": {
+    "name": "Property Tax Management",
+    "code": "property-tax",
+    "description": "Property tax assessment and collection management system",
+    "version": "1.0.0"
+  },
+  "entity": {
+    "name": "PropertyTax",
+    "apiPath": "/property-service/v1",
+    "primaryKey": "propertyId",
+    "displayField": "propertyNo"
+  },
+  "screens": {
+    "create": {
+      "enabled": true,
+      "roles": ["PT_CEMP", "PT_APPROVER"]
+    },
+    "search": {
+      "enabled": true,
+      "roles": ["PT_CEMP", "PT_APPROVER", "PT_FIELD_INSPECTOR"],
+      "filters": ["propertyNo", "ownerName", "locality", "status"],
+      "minSearchFields": 1
+    },
+    "inbox": {
+      "enabled": true,
+      "roles": ["PT_CEMP", "PT_APPROVER"]
+    },
+    "view": {
+      "enabled": true,
+      "roles": ["PT_CEMP", "PT_APPROVER", "PT_FIELD_INSPECTOR", "CITIZEN"]
+    },
+    "response": {
+      "enabled": true,
+      "types": ["basic"]
+    }
+  },
+  "fields": [
+    {
+      "name": "propertyNo",
+      "type": "text",
+      "label": "Property Number",
+      "required": true,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true,
+      "validation": {
+        "pattern": "^PT-[0-9]{6}$",
+        "maxLength": 10
+      }
+    },
+    {
+      "name": "ownerName",
+      "type": "text",
+      "label": "Owner Name",
+      "required": true,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true,
+      "validation": {
+        "minLength": 2,
+        "maxLength": 100
+      }
+    },
+    {
+      "name": "ownerMobile",
+      "type": "mobileNumber",
+      "label": "Owner Mobile",
+      "required": true,
+      "searchable": true,
+      "showInView": true
+    },
+    {
+      "name": "ownerEmail",
+      "type": "email",
+      "label": "Owner Email",
+      "required": false,
+      "showInView": true
+    },
+    {
+      "name": "propertyType",
+      "type": "dropdown",
+      "label": "Property Type",
+      "required": true,
+      "filterable": true,
+      "showInResults": true,
+      "showInView": true,
+      "options": [
+        { "code": "RESIDENTIAL", "name": "Residential" },
+        { "code": "COMMERCIAL", "name": "Commercial" },
+        { "code": "INDUSTRIAL", "name": "Industrial" },
+        { "code": "VACANT_LAND", "name": "Vacant Land" },
+        { "code": "MIXED", "name": "Mixed Use" }
+      ]
+    },
+    {
+      "name": "usageCategory",
+      "type": "dropdown",
+      "label": "Usage Category",
+      "required": true,
+      "showInView": true,
+      "options": [
+        { "code": "SELF_OCCUPIED", "name": "Self Occupied" },
+        { "code": "RENTED", "name": "Rented" },
+        { "code": "UNOCCUPIED", "name": "Unoccupied" }
+      ]
+    },
+    {
+      "name": "buildingArea",
+      "type": "number",
+      "label": "Building Area (sq ft)",
+      "required": true,
+      "showInView": true,
+      "validation": {
+        "min": 1,
+        "max": 100000
+      }
+    },
+    {
+      "name": "landArea",
+      "type": "number",
+      "label": "Land Area (sq ft)",
+      "required": true,
+      "showInView": true,
+      "validation": {
+        "min": 1,
+        "max": 500000
+      }
+    },
+    {
+      "name": "noOfFloors",
+      "type": "number",
+      "label": "Number of Floors",
+      "required": true,
+      "showInView": true,
+      "validation": {
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "name": "locality",
+      "type": "dropdown",
+      "label": "Locality",
+      "required": true,
+      "searchable": true,
+      "filterable": true,
+      "showInResults": true,
+      "showInView": true,
+      "mdms": {
+        "masterName": "Locality",
+        "moduleName": "egov-location",
+        "localePrefix": "LOCALITY_"
+      }
+    },
+    {
+      "name": "address",
+      "type": "textarea",
+      "label": "Property Address",
+      "required": true,
+      "showInView": true,
+      "validation": {
+        "maxLength": 500
+      }
+    },
+    {
+      "name": "assessmentDate",
+      "type": "date",
+      "label": "Assessment Date",
+      "required": true,
+      "showInView": true
+    },
+    {
+      "name": "taxAmount",
+      "type": "amount",
+      "label": "Tax Amount",
+      "required": true,
+      "showInResults": true,
+      "showInView": true,
+      "validation": {
+        "min": 0,
+        "max": 10000000
+      }
+    },
+    {
+      "name": "status",
+      "type": "dropdown",
+      "label": "Status",
+      "required": true,
+      "searchable": true,
+      "filterable": true,
+      "showInResults": true,
+      "showInView": true,
+      "options": [
+        { "code": "ACTIVE", "name": "Active" },
+        { "code": "INACTIVE", "name": "Inactive" },
+        { "code": "INWORKFLOW", "name": "In Workflow" },
+        { "code": "ASSESSMENT_PENDING", "name": "Assessment Pending" },
+        { "code": "PAYMENT_PENDING", "name": "Payment Pending" },
+        { "code": "PAID", "name": "Paid" }
+      ]
+    },
+    {
+      "name": "documents",
+      "type": "file",
+      "label": "Property Documents",
+      "required": false,
+      "showInView": true
+    }
+  ],
+  "api": {
+    "create": "/property-service/property/_create",
+    "update": "/property-service/property/_update",
+    "search": "/property-service/property/_search",
+    "view": "/property-service/property/{id}",
+    "calculate": "/property-service/property/_calculate"
+  },
+  "auth": {
+    "required": true,
+    "roles": ["PT_CEMP", "PT_APPROVER", "PT_FIELD_INSPECTOR", "CITIZEN"]
+  },
+  "workflow": {
+    "enabled": true,
+    "businessService": "PT"
+  },
+  "i18n": {
+    "prefix": "PT_",
+    "generateKeys": true
+  }
+}

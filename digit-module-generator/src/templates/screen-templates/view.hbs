@@ -1,0 +1,37 @@
+import { CommonScreen } from "@egovernments/digit-ui-components";
+import React from "react";
+import { useParams } from "react-router-dom";
+import { viewConfig } from "../../configs/{{entity.name}}ViewConfig";
+
+const {{entity.name}}View = () => {
+  const tenantId = Digit.ULBService.getCurrentTenantId();
+  const stateCode = Digit.ULBService.getStateId();
+  const userType = "employee";
+  const moduleCode = "{{constantCase module.code}}";
+  const { id } = useParams();
+
+  // Update config with actual ID
+  const config = {
+    ...viewConfig,
+    apiDetails: {
+      ...viewConfig.apiDetails,
+      requestParam: {
+        {{entity.primaryKey}}: id,
+      },
+    },
+  };
+
+  return (
+    <CommonScreen
+      {...{
+        stateCode,
+        userType,
+        tenantId,
+        moduleCode,
+        config,
+      }}
+    />
+  );
+};
+
+export default {{entity.name}}View;

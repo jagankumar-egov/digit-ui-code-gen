@@ -1,0 +1,302 @@
+{
+  "name": "HRMS Template",
+  "description": "Human Resource Management System template for employee management",
+  "version": "1.0.0",
+  "author": "JaganKumar <jagan.kumar@egov.org.in>",
+  "category": "human-resources",
+  "config": {
+    "module": {
+      "name": "Employee Management",
+      "code": "employee-mgmt",
+      "description": "Comprehensive employee management system",
+      "version": "1.0.0"
+    },
+    "entity": {
+      "name": "Employee",
+      "apiPath": "/employee-service/v1",
+      "primaryKey": "employeeId",
+      "displayField": "employeeName"
+    },
+    "screens": {
+      "create": {
+        "enabled": true,
+        "roles": ["EMPLOYEE_ADMIN", "HR_MANAGER"],
+        "workflow": true
+      },
+      "search": {
+        "enabled": true,
+        "roles": ["EMPLOYEE_ADMIN", "EMPLOYEE_VIEWER", "HR_MANAGER", "HR_VIEWER"],
+        "filters": ["department", "designation", "status", "joiningDateRange"],
+        "minSearchFields": 1,
+        "showFooter": true
+      },
+      "inbox": {
+        "enabled": true,
+        "roles": ["EMPLOYEE_ADMIN", "HR_MANAGER"],
+        "businessService": "employee-onboarding"
+      },
+      "view": {
+        "enabled": true,
+        "roles": ["EMPLOYEE_ADMIN", "EMPLOYEE_VIEWER", "HR_MANAGER", "HR_VIEWER"],
+        "sections": ["basic", "contact", "employment", "documents", "workflow"]
+      },
+      "response": {
+        "enabled": true,
+        "types": ["basic", "workflow"]
+      }
+    },
+    "fields": [
+      {
+        "name": "employeeId",
+        "type": "text",
+        "label": "Employee ID",
+        "required": true,
+        "searchable": true,
+        "showInResults": true,
+        "showInView": true,
+        "validation": {
+          "pattern": "^EMP[0-9]{6}$",
+          "maxLength": 9
+        }
+      },
+      {
+        "name": "employeeName",
+        "type": "text",
+        "label": "Employee Name",
+        "required": true,
+        "searchable": true,
+        "showInResults": true,
+        "showInView": true,
+        "validation": {
+          "pattern": "^[A-Za-z\\s]+$",
+          "maxLength": 100
+        }
+      },
+      {
+        "name": "fatherHusbandName",
+        "type": "text",
+        "label": "Father/Husband Name",
+        "required": true,
+        "showInView": true,
+        "validation": {
+          "pattern": "^[A-Za-z\\s]+$",
+          "maxLength": 100
+        }
+      },
+      {
+        "name": "dateOfBirth",
+        "type": "date",
+        "label": "Date of Birth",
+        "required": true,
+        "showInView": true
+      },
+      {
+        "name": "gender",
+        "type": "dropdown",
+        "label": "Gender",
+        "required": true,
+        "showInView": true,
+        "mdms": {
+          "masterName": "GenderType",
+          "moduleName": "common-masters",
+          "localePrefix": "COMMON_GENDER_"
+        }
+      },
+      {
+        "name": "mobileNumber",
+        "type": "mobileNumber",
+        "label": "Mobile Number",
+        "required": true,
+        "searchable": true,
+        "showInResults": true,
+        "showInView": true,
+        "validation": {
+          "min": 1000000000,
+          "max": 9999999999
+        }
+      },
+      {
+        "name": "emailId",
+        "type": "email",
+        "label": "Email ID",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "pattern": "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$"
+        }
+      },
+      {
+        "name": "department",
+        "type": "dropdown",
+        "label": "Department",
+        "required": true,
+        "searchable": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "showInInboxResults": true,
+        "mdms": {
+          "masterName": "Department",
+          "moduleName": "common-masters",
+          "localePrefix": "COMMON_DEPARTMENT_"
+        }
+      },
+      {
+        "name": "designation",
+        "type": "dropdown",
+        "label": "Designation",
+        "required": true,
+        "searchable": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "showInInboxResults": true,
+        "mdms": {
+          "masterName": "Designation",
+          "moduleName": "common-masters",
+          "localePrefix": "COMMON_DESIGNATION_"
+        }
+      },
+      {
+        "name": "employeeStatus",
+        "type": "dropdown",
+        "label": "Employment Status",
+        "required": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "options": [
+          { "code": "EMPLOYED", "name": "Employed" },
+          { "code": "SUSPENDED", "name": "Suspended" },
+          { "code": "TERMINATED", "name": "Terminated" },
+          { "code": "RETIRED", "name": "Retired" }
+        ]
+      },
+      {
+        "name": "employeeType",
+        "type": "dropdown",
+        "label": "Employment Type",
+        "required": true,
+        "showInView": true,
+        "options": [
+          { "code": "PERMANENT", "name": "Permanent" },
+          { "code": "TEMPORARY", "name": "Temporary" },
+          { "code": "CONTRACTUAL", "name": "Contractual" },
+          { "code": "OUTSOURCED", "name": "Outsourced" }
+        ]
+      },
+      {
+        "name": "dateOfAppointment",
+        "type": "date",
+        "label": "Date of Appointment",
+        "required": true,
+        "showInView": true
+      },
+      {
+        "name": "basicSalary",
+        "type": "amount",
+        "label": "Basic Salary",
+        "required": true,
+        "showInView": true,
+        "validation": {
+          "min": 0,
+          "max": 1000000
+        }
+      },
+      {
+        "name": "permanentAddress",
+        "type": "textarea",
+        "label": "Permanent Address",
+        "required": true,
+        "showInView": true,
+        "validation": {
+          "maxLength": 500
+        }
+      },
+      {
+        "name": "correspondenceAddress",
+        "type": "textarea",
+        "label": "Correspondence Address",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "maxLength": 500
+        }
+      },
+      {
+        "name": "ward",
+        "type": "locationdropdown",
+        "label": "Ward",
+        "required": false,
+        "filterable": true,
+        "showInView": true,
+        "locationtype": "ward"
+      },
+      {
+        "name": "panNumber",
+        "type": "text",
+        "label": "PAN Number",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "pattern": "^[A-Z]{5}[0-9]{4}[A-Z]{1}$",
+          "maxLength": 10
+        }
+      },
+      {
+        "name": "aadhaarNumber",
+        "type": "text",
+        "label": "Aadhaar Number",
+        "required": false,
+        "showInView": true,
+        "validation": {
+          "pattern": "^[0-9]{12}$",
+          "maxLength": 12
+        }
+      }
+    ],
+    "api": {
+      "create": "/employee/_create",
+      "update": "/employee/_update",
+      "search": "/employee/_search",
+      "view": "/employee/{id}",
+      "workflow": "/workflow/_transition"
+    },
+    "auth": {
+      "required": true,
+      "roles": ["EMPLOYEE_ADMIN", "EMPLOYEE_VIEWER", "HR_MANAGER", "HR_VIEWER"]
+    },
+    "workflow": {
+      "enabled": true,
+      "businessService": "employee-onboarding"
+    },
+    "documents": {
+      "enabled": true,
+      "types": ["ID_PROOF", "ADDRESS_PROOF", "QUALIFICATION_CERTIFICATE", "EXPERIENCE_CERTIFICATE"]
+    },
+    "i18n": {
+      "prefix": "EMP_",
+      "generateKeys": true
+    },
+    "additionalSections": [
+      {
+        "head": "Employment Details",
+        "body": [
+          {
+            "name": "reportingManager",
+            "type": "radioordropdown",
+            "label": "Reporting Manager",
+            "key": "reportingManager",
+            "required": false
+          },
+          {
+            "name": "joiningBonus",
+            "type": "amount",
+            "label": "Joining Bonus",
+            "required": false
+          }
+        ]
+      }
+    ]
+  }
+}

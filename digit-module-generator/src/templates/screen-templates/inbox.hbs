@@ -1,0 +1,25 @@
+import { InboxSearchComposer } from "@egovernments/digit-ui-components";
+
+import React from "react";
+import inboxConfig from "../../configs/{{entity.name}}InboxConfig";
+
+const {{entity.name}}Inbox = () => {
+  const tenantId = Digit.ULBService.getCurrentTenantId();
+  const stateCode = Digit.ULBService.getStateId();
+  const userType = "employee";
+  const moduleCode = "{{constantCase module.code}}";
+
+  return (
+    <InboxSearchComposer
+      {...{
+        stateCode,
+        userType,
+        tenantId,
+        moduleCode,
+        config: inboxConfig(),
+      }}
+    />
+  );
+};
+
+export default {{entity.name}}Inbox;
