@@ -23,45 +23,171 @@ Handlebars.registerHelper('constantCase', str => {
  * @param {string} outputDir - Output directory path
  */
 async function generateServices(config, outputDir) {
-  console.log('📡 Generating API services...');
+  console.log('📡 Generating API hooks...');
+  const hooksDir = path.join(outputDir, 'src', 'hooks');
+  await fs.ensureDir(hooksDir);
+
+  // Generate main hooks file
+  const hooksContent = generateMainService(config);
+  await fs.writeFile(path.join(hooksDir, `use${config.entity.name}.js`), hooksContent);
+
+  // Also create a services directory for backwards compatibility
   const servicesDir = path.join(outputDir, 'src', 'services');
   await fs.ensureDir(servicesDir);
-
-  // Generate main service file
-  const serviceContent = generateMainService(config);
-  await fs.writeFile(path.join(servicesDir, `${config.entity.name}Service.js`), serviceContent);
 
   // Generate API endpoints file
   const endpointsContent = generateApiEndpoints(config);
   await fs.writeFile(path.join(servicesDir, 'apiEndpoints.js'), endpointsContent);
-  console.log('✅ API services generated successfully');
+  console.log('✅ API hooks generated successfully');
 }
 function generateMainService(config) {
   const template = `/**
- * {{config.entity.name}} Service
- * Generated API service for {{config.module.name}}
+ * {{config.entity.name}} Hooks
+ * Generated API hooks for {{config.module.name}}
+ * Uses DIGIT useCustomAPIHook and useCustomAPIMutationHook patterns
  */
 
-import { Request } from "@egovernments/digit-ui-libraries";
+// API Request Configurations
+export const {{camelCase config.entity.name}}RequestConfigs = {
+  create: {
+    url: "{{config.api.create}}",
+    params: {},
+    body: {},
+    config: {
+      enable: false,
+    },
+  },
+  
+  update: {
+    url: "{{config.api.update}}",
+    params: {},
+    body: {},
+    config: {
+      enable: false,
+    },
+  },
+  
+  search: {
+    url: "{{config.api.search}}",
+    params: {},
+    body: {},
+    config: {
+      enable: false,
+      select: (data) => data?.{{config.entity.name}}s || [],
+    },
+  },
+  
+  view: {
+    url: "{{config.api.view}}",
+    params: {},
+    body: {},
+    config: {
+      enable: false,
+      select: (data) => data?.{{config.entity.name}}s?.[0] || {},
+    },
+  },
 
-// API Endpoints
-const API_ENDPOINTS = {
-  CREATE: "{{config.api.create}}",
-  UPDATE: "{{config.api.update}}",
-  SEARCH: "{{config.api.search}}",
-  VIEW: "{{config.api.view}}"
+{{#if config.workflow.enabled}}
+  workflow: {
+    url: "/egov-workflow-v2/egov-wf/process/_transition",
+    params: {},
+    body: {},
+    config: {
+      enable: false,
+    },
+  },
+{{/if}}
 };
 
 /**
- * Create {{config.entity.name}}
- * @param {Object} data - {{config.entity.name}} data
- * @param {Object} userInfo - Current user information
- * @param {string} tenantId - Tenant ID
+ * Hook for creating {{config.entity.name}}
+ * @returns {Object} mutation object with mutate function
  */
-export const create{{config.entity.name}} = async (data, userInfo, tenantId) => {
-  const requestBody = {
+export const useCreate{{config.entity.name}} = () => {
+  return Digit.Hooks.useCustomAPIMutationHook({{camelCase config.entity.name}}RequestConfigs.create);
+};
+
+/**
+ * Hook for updating {{config.entity.name}}
+ * @returns {Object} mutation object with mutate function
+ */
+export const useUpdate{{config.entity.name}} = () => {
+  return Digit.Hooks.useCustomAPIMutationHook({{camelCase config.entity.name}}RequestConfigs.update);
+};
+
+/**
+ * Hook for searching {{config.entity.name}}s
+ * @param {Object} searchCriteria - Search parameters
+ * @param {string} tenantId - Tenant ID
+ * @param {boolean} enabled - Whether to enable the query
+ * @returns {Object} query result with data, isLoading, error, etc.
+ */
+export const useSearch{{config.entity.name}}s = (searchCriteria = {}, tenantId, enabled = true) => {
+  const requestConfig = {
+    ...{{camelCase config.entity.name}}RequestConfigs.search,
+    params: { tenantId, ...searchCriteria },
+    body: {
+      {{config.entity.name}}SearchCriteria: {
+        tenantId,
+        ...searchCriteria
+      }
+    },
+    config: {
+      ...{{camelCase config.entity.name}}RequestConfigs.search.config,
+      enable: enabled,
+    },
+  };
+  
+  return Digit.Hooks.useCustomAPIHook(requestConfig);
+};
+
+/**
+ * Hook for getting {{config.entity.name}} by ID
+ * @param {string} id - {{config.entity.name}} ID
+ * @param {string} tenantId - Tenant ID
+ * @param {boolean} enabled - Whether to enable the query
+ * @returns {Object} query result with data, isLoading, error, etc.
+ */
+export const useGet{{config.entity.name}}ById = (id, tenantId, enabled = true) => {
+  const requestConfig = {
+    ...{{camelCase config.entity.name}}RequestConfigs.view,
+    params: { tenantId, id },
+    body: {
+      {{config.entity.name}}SearchCriteria: {
+        tenantId,
+        id: [id]
+      }
+    },
+    config: {
+      ...{{camelCase config.entity.name}}RequestConfigs.view.config,
+      enable: enabled && !!id,
+    },
+  };
+  
+  return Digit.Hooks.useCustomAPIHook(requestConfig);
+};
+
+{{#if config.workflow.enabled}}
+/**
+ * Hook for workflow transitions
+ * @returns {Object} mutation object for workflow operations
+ */
+export const use{{config.entity.name}}Workflow = () => {
+  return Digit.Hooks.useCustomAPIMutationHook({{camelCase config.entity.name}}RequestConfigs.workflow);
+};
+{{/if}}
+
+/**
+ * Utility function to transform create data
+ * @param {Object} formData - Form data from FormComposer
+ * @param {string} tenantId - Tenant ID
+ * @param {Object} userInfo - Current user information
+ * @returns {Object} Transformed data for API
+ */
+export const transformCreate{{config.entity.name}}Data = (formData, tenantId, userInfo) => {
+  return {
     {{config.entity.name}}: {
-      ...data,
+      ...formData,
       tenantId,
       auditDetails: {
         createdBy: userInfo?.uuid,
@@ -71,120 +197,43 @@ export const create{{config.entity.name}} = async (data, userInfo, tenantId) => 
       }
     }
   };
-
-  const response = await Request({
-    url: API_ENDPOINTS.CREATE,
-    data: requestBody,
-    useCache: false,
-    userService: true,
-    params: { tenantId }
-  });
-
-  return response;
 };
 
 /**
- * Update {{config.entity.name}}
- * @param {Object} data - Updated {{config.entity.name}} data
- * @param {Object} userInfo - Current user information
+ * Utility function to transform update data
+ * @param {Object} formData - Form data from FormComposer
+ * @param {Object} existingData - Existing entity data
  * @param {string} tenantId - Tenant ID
+ * @param {Object} userInfo - Current user information
+ * @returns {Object} Transformed data for API
  */
-export const update{{config.entity.name}} = async (data, userInfo, tenantId) => {
-  const requestBody = {
+export const transformUpdate{{config.entity.name}}Data = (formData, existingData, tenantId, userInfo) => {
+  return {
     {{config.entity.name}}: {
-      ...data,
+      ...existingData,
+      ...formData,
       tenantId,
       auditDetails: {
-        ...data.auditDetails,
+        ...existingData.auditDetails,
         lastModifiedBy: userInfo?.uuid,
         lastModifiedTime: Date.now()
       }
     }
   };
-
-  const response = await Request({
-    url: API_ENDPOINTS.UPDATE,
-    data: requestBody,
-    useCache: false,
-    userService: true,
-    params: { tenantId }
-  });
-
-  return response;
 };
 
-/**
- * Search {{config.entity.name}}s
- * @param {Object} searchCriteria - Search parameters
- * @param {string} tenantId - Tenant ID
- */
-export const search{{config.entity.name}}s = async (searchCriteria, tenantId) => {
-  const response = await Request({
-    url: API_ENDPOINTS.SEARCH,
-    data: {
-      {{config.entity.name}}SearchCriteria: {
-        ...searchCriteria,
-        tenantId
-      }
-    },
-    useCache: false,
-    userService: true,
-    params: { tenantId }
-  });
-
-  return response;
-};
-
-/**
- * Get {{config.entity.name}} by ID
- * @param {string} id - {{config.entity.name}} ID
- * @param {string} tenantId - Tenant ID
- */
-export const get{{config.entity.name}}ById = async (id, tenantId) => {
-  const response = await Request({
-    url: API_ENDPOINTS.VIEW.replace('{id}', id),
-    useCache: false,
-    userService: true,
-    params: { tenantId }
-  });
-
-  return response;
-};
-
-{{#if config.workflow.enabled}}
-/**
- * Submit {{config.entity.name}} to workflow
- * @param {Object} workflowData - Workflow submission data
- * @param {string} tenantId - Tenant ID
- */
-export const submitToWorkflow = async (workflowData, tenantId) => {
-  const response = await Request({
-    url: "/egov-workflow-v2/egov-wf/process/_transition",
-    data: {
-      ProcessInstances: [
-        {
-          ...workflowData,
-          tenantId,
-          businessService: "{{config.workflow.businessService}}"
-        }
-      ]
-    },
-    useCache: false,
-    userService: true,
-    params: { tenantId }
-  });
-
-  return response;
-};
-{{/if}}
-
-// Export all service functions
+// Export all hooks and utilities
 export default {
-  create{{config.entity.name}},
-  update{{config.entity.name}},
-  search{{config.entity.name}}s,
-  get{{config.entity.name}}ById{{#if config.workflow.enabled}},
-  submitToWorkflow{{/if}}
+  useCreate{{config.entity.name}},
+  useUpdate{{config.entity.name}},
+  useSearch{{config.entity.name}}s,
+  useGet{{config.entity.name}}ById,
+{{#if config.workflow.enabled}}
+  use{{config.entity.name}}Workflow,
+{{/if}}
+  transformCreate{{config.entity.name}}Data,
+  transformUpdate{{config.entity.name}}Data,
+  {{camelCase config.entity.name}}RequestConfigs
 };`;
   const compiled = Handlebars.compile(template);
   return compiled({

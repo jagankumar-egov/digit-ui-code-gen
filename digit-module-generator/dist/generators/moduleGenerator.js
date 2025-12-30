@@ -51,6 +51,13 @@ Handlebars.registerHelper('constantCase', str => {
 Handlebars.registerHelper('eq', (a, b) => a === b);
 Handlebars.registerHelper('or', (a, b) => a || b);
 Handlebars.registerHelper('and', (a, b) => a && b);
+Handlebars.registerHelper('toLocalizationKey', function (fieldName, prefix) {
+  const finalPrefix = prefix || 'MODULE_';
+  // Convert camelCase to CONSTANT_CASE properly
+  const constantCase = fieldName.replace(/([a-z])([A-Z])/g, '$1_$2') // Insert underscore before capitals
+  .toUpperCase();
+  return `${finalPrefix}${constantCase}`;
+});
 async function generateFromConfig(config, outputPath, force = false) {
   const moduleDir = path.join(outputPath, config.module.code);
   const result = {
@@ -109,32 +116,40 @@ async function generatePackageJson(moduleDir, config, result) {
   "description": "{{module.description}}",
   "main": "dist/index.js",
   "scripts": {
-    "build": "webpack --mode=production",
-    "dev": "webpack --mode=development --watch",
-    "test": "jest",
-    "test:watch": "jest --watch"
-  },
-  "dependencies": {
-    "@egovernments/digit-ui-react-components": "^1.8.0",
-    "@egovernments/digit-ui-components": "^0.0.2",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-router-dom": "^5.3.0",
-    "react-i18next": "^11.15.3"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.23.0",
-    "@babel/preset-env": "^7.23.0",
-    "@babel/preset-react": "^7.22.0",
-    "babel-loader": "^9.1.0",
-    "webpack": "^5.88.0",
-    "webpack-cli": "^5.1.0",
-    "jest": "^29.7.0",
-    "@testing-library/react": "^12.1.5"
+    "build": "cross-env NODE_ENV=production webpack --config webpack.config.js",
+    "build:dev": "cross-env NODE_ENV=development webpack --config webpack.config.js",
+    "build:analyze": "NODE_ENV=production webpack --config webpack.config.js --analyze",
+    "publish:components": "npm publish --tag console-v0.5"
   },
   "peerDependencies": {
-    "react": "^17.0.0",
-    "react-dom": "^17.0.0"
+    "@tanstack/react-query": "^5.62.16",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-router-dom": "6.25.1",
+    "react-i18next": "15.0.0",
+    "styled-components": "5.x",
+    "@egovernments/digit-ui-react-components": "2.0.0-dev-02",
+    "@egovernments/digit-ui-svg-components": "2.0.0-dev-01",
+    "@egovernments/digit-ui-components": "2.0.0-dev-19"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.3",
+    "@babel/preset-env": "^7.23.3",
+    "@babel/preset-react": "^7.23.3",
+    "@tanstack/react-query": "^5.62.16",
+    "babel-loader": "^9.1.3",
+    "babel-plugin-transform-remove-console": "^6.9.4",
+    "core-js": "^3.33.0",
+    "cross-env": "7.0.3",
+    "css-loader": "^6.8.1",
+    "lint-staged": "12.3.7",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-router-dom": "6.25.1",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1",
+    "@types/react-redux": "^7.1.33"
   },
   "files": [
     "dist"

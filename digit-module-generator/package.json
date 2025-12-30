@@ -1,6 +1,6 @@
 {
   "name": "@egovernments/digit-module-generator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Official CLI library to generate DIGIT micro-ui modules with modern patterns and API specifications",
   "main": "dist/index.js",
   "bin": {
@@ -38,6 +38,7 @@
   "homepage": "https://github.com/egovernments/digit-module-generator#readme",
   "dependencies": {
     "ajv": "^8.12.0",
+    "ajv-formats": "^2.1.1",
     "axios": "^1.6.0",
     "boxen": "^5.1.2",
     "case": "^1.6.3",

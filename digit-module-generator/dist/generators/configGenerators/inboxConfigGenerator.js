@@ -8,7 +8,7 @@ function generateInboxConfig(config) {
     .toUpperCase();
     return `${finalPrefix}${constantCase}`;
   });
-  const template = `const inboxConfig = () => {
+  const template = `const {{camelCase entity.name}}InboxConfig = () => {
   return {
     label: "{{i18n.prefix}}INBOX_HEADER",
     postProcessResult: true,
@@ -270,7 +270,7 @@ function generateInboxConfig(config) {
   };
 };
 
-export default inboxConfig;`;
+export default {{camelCase entity.name}}InboxConfig;`;
   const compiled = Handlebars.compile(template);
   return compiled(config);
 }

@@ -8,32 +8,32 @@ function generateSearchConfig(config) {
     .toUpperCase();
     return `${finalPrefix}${constantCase}`;
   });
-  const template = `export const searchConfig = {
-  headerLabel: "{{i18n.prefix}}SEARCH_HEADER",
-  type: "search",
-  actions: {
-    actionLabel: "{{i18n.prefix}}CREATE_NEW",
-    actionRoles: [{{#each auth.roles}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}],
+  const template = `const {{camelCase entity.name}}SearchConfig = () => {
+  return {
+    headerLabel: "{{toLocalizationKey 'SEARCH' i18n.prefix}}{{constantCase entity.name}}S",
+    type: "search",
+    actionLabel: "{{toLocalizationKey 'ADD' i18n.prefix}}{{constantCase entity.name}}",
+    actionRole: "{{#if auth.roles}}{{auth.roles.[0]}}{{else}}EMPLOYEE{{/if}}",
     actionLink: "{{kebabCase module.code}}/create",
-  },
-  apiDetails: {
-    serviceName: \`{{entity.apiPath}}{{api.search}}\`,
-    requestParam: {},
-    requestBody: {
-      {{entity.name}}SearchCriteria: {},
+    apiDetails: {
+      serviceName: "{{api.search}}",
+      requestParam: {},
+      requestBody: {
+        apiOperation: "SEARCH",
+        {{entity.name}}: {},
+      },
+      minParametersForSearchForm: {{#if screens.search.minSearchFields}}{{screens.search.minSearchFields}}{{else}}1{{/if}},
+      masterName: "commonUiConfig",
+      moduleName: "Search{{pascalCase entity.name}}Config",
+      tableFormJsonPath: "requestParam",
+      filterFormJsonPath: "requestBody.{{entity.name}}",
+      searchFormJsonPath: "requestBody.{{entity.name}}",
     },
-    minParametersForSearchForm: {{#if screens.search.minSearchFields}}{{screens.search.minSearchFields}}{{else}}0{{/if}},
-    masterName: "commonUiConfig",
-    moduleName: "{{entity.name}}SearchConfig",
-    tableFormJsonPath: "requestBody.{{entity.name}}SearchCriteria",
-    filterFormJsonPath: "requestBody.{{entity.name}}SearchCriteria.filters",
-    searchFormJsonPath: "requestBody.{{entity.name}}SearchCriteria.search",
-  },
   sections: {
     search: {
       uiConfig: {
         headerStyle: null,
-        formClassName: "{{kebabCase entity.name}}-search-form",
+        formClassName: "custom-both-clear-search",
         primaryLabel: "ES_COMMON_SEARCH",
         secondaryLabel: "ES_COMMON_CLEAR_SEARCH",
         minReqFields: {{#if screens.search.minSearchFields}}{{screens.search.minSearchFields}}{{else}}1{{/if}},
@@ -105,71 +105,38 @@ function generateSearchConfig(config) {
         ],
       },
       label: "",
+      children: {},
       show: true,
     },
     searchResult: {
+      label: "",
       uiConfig: {
         columns: [
 {{#each fields}}
 {{#if showInResults}}
           {
             label: "{{toLocalizationKey name ../i18n.prefix}}",
-            jsonPath: "{{resultPath}}{{name}}",
-{{#if link}}
-            link: true,
-            buttonProps: {
-              size: "medium",
-              icon: "RemoveRedEyeIcon",
-            }
-{{else if additionalCustomization}}
+            jsonPath: "{{name}}",
+{{#if additionalCustomization}}
             additionalCustomization: true,
 {{/if}}
           },
 {{/if}}
 {{/each}}
-          {
-            label: "COMMON_ACTION",
-            jsonPath: "{{entity.primaryKey}}",
-            additionalCustomization: true,
-            key: "actions",
-          },
         ],
-        enableGlobalSearch: true,
+        enableGlobalSearch: false,
         enableColumnSort: true,
-        resultsJsonPath: "{{entity.name}}s",
-        defaultSortAsc: true,
+        resultsJsonPath: "{{entity.name}}",
       },
+      children: {},
       show: true,
     },
   },
-  footerProps: {
-    showFooter: {{#if screens.search.showFooter}}true{{else}}false{{/if}},
-{{#if auth.roles}}
-    allowedRolesForFooter: [{{#each auth.roles}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}],
-{{/if}}
-    actionFields: [
-      {
-        label: "{{i18n.prefix}}GO_BACK",
-        icon: "ArrowBack",
-        isSuffix: false,
-        variation: "secondary",
-        allowedRoles: [{{#each auth.roles}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}],
-      },
-      {
-        label: "{{i18n.prefix}}CREATE_NEW",
-        icon: "ArrowForward",
-        isSuffix: true,
-        variation: "primary",
-        allowedRoles: [{{#each auth.roles}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}],
-      },
-    ],
-    setactionFieldsToRight: true,
-    className: "{{kebabCase entity.name}}-search-footer",
-    style: {},
-  },
+  additionalSections: {},
+  };
 };
 
-export default searchConfig;`;
+export default {{camelCase entity.name}}SearchConfig;`;
   const compiled = Handlebars.compile(template);
   return compiled(config);
 }
