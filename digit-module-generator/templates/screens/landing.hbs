@@ -1,0 +1,103 @@
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { Card, Header, Button } from "@egovernments/digit-ui-components";
+
+const {{pascalCase config.entity.name}}Landing = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const moduleCode = "{{kebabCase config.module.code}}";
+  const user = Digit.UserService.getUser()?.info;
+  const userRoles = user?.roles?.map((role) => role.code) || [];
+
+  const hasRole = (requiredRoles) => {
+    if (!requiredRoles || requiredRoles.length === 0) return true;
+    return requiredRoles.some((role) => userRoles.includes(role));
+  };
+
+  const navigationCards = [
+    {{#if config.screens.create.enabled}}
+    {
+      label: t("{{toLocalizationKey 'CREATE' config.i18n.prefix}}_{{toLocalizationKey config.entity.name ''}}"),
+      description: t("{{toLocalizationKey 'CREATE_DESCRIPTION' config.i18n.prefix}}"),
+      route: `/employee/${moduleCode}/create`,
+      icon: "Add",
+      roles: {{{json config.screens.create.roles}}},
+    },
+    {{/if}}
+    {{#if config.screens.search.enabled}}
+    {
+      label: t("{{toLocalizationKey 'SEARCH' config.i18n.prefix}}_{{toLocalizationKey config.entity.name ''}}"),
+      description: t("{{toLocalizationKey 'SEARCH_DESCRIPTION' config.i18n.prefix}}"),
+      route: `/employee/${moduleCode}/search`,
+      icon: "Search",
+      roles: {{{json config.screens.search.roles}}},
+    },
+    {{/if}}
+    {{#if config.screens.inbox.enabled}}
+    {
+      label: t("{{toLocalizationKey 'INBOX' config.i18n.prefix}}_{{toLocalizationKey config.entity.name ''}}"),
+      description: t("{{toLocalizationKey 'INBOX_DESCRIPTION' config.i18n.prefix}}"),
+      route: `/employee/${moduleCode}/inbox`,
+      icon: "Inbox",
+      roles: {{{json config.screens.inbox.roles}}},
+    },
+    {{/if}}
+    {{#if config.screens.custom.enabled}}
+    {
+      label: t("{{toLocalizationKey 'CUSTOM' config.i18n.prefix}}_{{toLocalizationKey config.entity.name ''}}"),
+      description: t("{{toLocalizationKey 'CUSTOM_DESCRIPTION' config.i18n.prefix}}"),
+      route: `/employee/${moduleCode}/custom`,
+      icon: "ViewModule",
+      roles: {{{json config.screens.custom.roles}}},
+    },
+    {{/if}}
+  ].filter(Boolean);
+
+  return (
+    <div className="{{kebabCase config.entity.name}}-landing-container">
+      <Header>{t("{{toLocalizationKey config.module.name config.i18n.prefix}}")}</Header>
+
+      <div className="{{kebabCase config.entity.name}}-landing-cards" style=\{{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1.5rem", padding: "1rem 0" }}>
+        {navigationCards
+          .filter((card) => hasRole(card.roles))
+          .map((card, index) => (
+            <Card
+              key={index}
+              type="primary"
+              className="{{kebabCase config.entity.name}}-landing-nav-card"
+              style=\{{ cursor: "pointer" }}
+              onClick={() => navigate(card.route)}
+            >
+              <div style=\{{ padding: "1rem" }}>
+                <h2 style=\{{ marginBottom: "0.5rem", fontSize: "1.25rem" }}>{card.label}</h2>
+                <p style=\{{ color: "#6b7280", fontSize: "0.875rem" }}>{card.description}</p>
+              </div>
+              <div style=\{{ padding: "0 1rem 1rem", display: "flex", justifyContent: "flex-end" }}>
+                <Button
+                  type="button"
+                  variation="secondary"
+                  size="small"
+                  label={t("{{toLocalizationKey 'GO' config.i18n.prefix}}")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(card.route);
+                  }}
+                />
+              </div>
+            </Card>
+          ))}
+      </div>
+
+      {navigationCards.filter((card) => hasRole(card.roles)).length === 0 && (
+        <Card type="primary">
+          <p style=\{{ textAlign: "center", padding: "2rem", color: "#6b7280" }}>
+            {t("{{toLocalizationKey 'NO_ACCESS' config.i18n.prefix}}")}
+          </p>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default {{pascalCase config.entity.name}}Landing;

@@ -53,7 +53,9 @@ const moduleConfigSchema = {
         search: { $ref: '#/definitions/screenConfig' },
         inbox: { $ref: '#/definitions/screenConfig' },
         view: { $ref: '#/definitions/screenConfig' },
-        response: { $ref: '#/definitions/screenConfig' }
+        response: { $ref: '#/definitions/screenConfig' },
+        custom: { $ref: '#/definitions/screenConfig' },
+        landing: { $ref: '#/definitions/screenConfig' }
       },
       additionalProperties: false,
       minProperties: 1
@@ -70,7 +72,7 @@ const moduleConfigSchema = {
         update: { type: 'string', pattern: '^/.*' },
         search: { type: 'string', pattern: '^/.*' },
         view: { type: 'string', pattern: '^/.*' },
-        workflow: { type: 'string', pattern: '^/.*' }
+        workflow: { type: 'string', pattern: '^(/.*|)$' }
       },
       additionalProperties: true
     },
@@ -91,7 +93,7 @@ const moduleConfigSchema = {
       type: 'object',
       properties: {
         enabled: { type: 'boolean' },
-        businessService: { type: 'string', minLength: 1 }
+        businessService: { type: 'string' }
       },
       required: ['enabled'],
       additionalProperties: false
@@ -131,13 +133,14 @@ const moduleConfigSchema = {
           pattern: '^[a-zA-Z][a-zA-Z0-9]*$',
           minLength: 1
         },
-        type: { 
+        type: {
           type: 'string',
           enum: [
-            'text', 'number', 'date', 'datetime', 'email', 'url', 'password',
-            'textarea', 'dropdown', 'radio', 'checkbox', 'multiselect',
-            'radioordropdown', 'mobileNumber', 'amount', 'locationdropdown',
-            'apidropdown', 'file', 'component'
+            'text', 'number', 'date', 'datetime', 'time', 'email', 'url', 'password',
+            'textarea', 'dropdown', 'radio', 'checkbox', 'toggle', 'multiselect',
+            'multiselectdropdown', 'radioordropdown', 'mobileNumber', 'amount',
+            'locationdropdown', 'apidropdown', 'file', 'component',
+            'search', 'geolocation', 'numeric'
           ]
         },
         label: { type: 'string', minLength: 1 },
@@ -294,7 +297,11 @@ function validateBusinessLogic(config) {
   // Validate API paths
   if (config.api) {
     Object.entries(config.api).forEach(([operation, path]) => {
-      if (typeof path === 'string' && !path.startsWith('/')) {
+      // Skip empty workflow paths when workflow is disabled
+      if (operation === 'workflow' && (!path || path === '')) {
+        return;
+      }
+      if (typeof path === 'string' && path !== '' && !path.startsWith('/')) {
         errors.push(`api.${operation}: API paths must start with '/'`);
       }
     });

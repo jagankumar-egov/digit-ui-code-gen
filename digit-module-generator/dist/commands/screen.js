@@ -22,7 +22,7 @@ async function generateScreen(screenType, options) {
     console.log(chalk.blue(`\n🔧 Generating ${screenType} screen...\n`));
 
     // Validate screen type
-    const validScreenTypes = ['create', 'search', 'inbox', 'view', 'response'];
+    const validScreenTypes = ['create', 'search', 'inbox', 'view', 'response', 'custom', 'landing'];
     if (!validScreenTypes.includes(screenType)) {
       console.log(chalk.red(`❌ Invalid screen type: ${screenType}`));
       console.log(chalk.white(`Valid types: ${validScreenTypes.join(', ')}`));
@@ -106,7 +106,28 @@ function generateMinimalConfig(entityName, screenType) {
       primaryKey: `${entityName.toLowerCase()}Id`,
       displayField: `${entityName.toLowerCase()}Name`
     },
-    screens: {
+    screens: screenType === 'landing' ? {
+      landing: {
+        enabled: true,
+        roles: ['ADMIN', 'USER']
+      },
+      create: {
+        enabled: true,
+        roles: ['ADMIN']
+      },
+      search: {
+        enabled: true,
+        roles: ['ADMIN', 'USER']
+      },
+      inbox: {
+        enabled: false,
+        roles: []
+      },
+      custom: {
+        enabled: false,
+        roles: []
+      }
+    } : {
       [screenType]: {
         enabled: true,
         roles: ['ADMIN', 'USER']

@@ -1,0 +1,374 @@
+{
+  "name": "Field Showcase Template",
+  "description": "Demonstration template showcasing ALL supported field types in the DIGIT Module Generator",
+  "version": "1.0.0",
+  "author": "DIGIT Team",
+  "category": "showcase",
+  "config": {
+    "module": {
+      "name": "Field Showcase",
+      "code": "field-showcase",
+      "description": "Comprehensive showcase of all supported field types for testing and demonstration",
+      "version": "1.0.0"
+    },
+    "entity": {
+      "name": "Demo",
+      "apiPath": "/showcase-service/v1",
+      "primaryKey": "demoId",
+      "displayField": "demoName"
+    },
+    "screens": {
+      "create": {
+        "enabled": true,
+        "roles": ["SHOWCASE_ADMIN"],
+        "workflow": false
+      },
+      "search": {
+        "enabled": true,
+        "roles": ["SHOWCASE_ADMIN", "SHOWCASE_VIEWER"],
+        "filters": ["status", "category"],
+        "minSearchFields": 1,
+        "showFooter": true
+      },
+      "inbox": {
+        "enabled": false,
+        "roles": [],
+        "businessService": ""
+      },
+      "view": {
+        "enabled": true,
+        "roles": ["SHOWCASE_ADMIN", "SHOWCASE_VIEWER"],
+        "sections": ["basic", "details"]
+      },
+      "response": {
+        "enabled": true,
+        "types": ["basic"]
+      },
+      "custom": {
+        "enabled": true,
+        "roles": ["SHOWCASE_ADMIN"]
+      },
+      "landing": {
+        "enabled": true,
+        "roles": ["SHOWCASE_ADMIN", "SHOWCASE_VIEWER"]
+      }
+    },
+    "fields": [
+      {
+        "name": "demoId",
+        "type": "text",
+        "label": "Demo ID",
+        "required": true,
+        "searchable": true,
+        "showInResults": true,
+        "showInView": true,
+        "description": "Auto-generated unique identifier",
+        "validation": {
+          "pattern": "^DEMO[0-9]{6}$",
+          "maxLength": 10
+        }
+      },
+      {
+        "name": "demoName",
+        "type": "text",
+        "label": "Demo Name",
+        "required": true,
+        "searchable": true,
+        "showInResults": true,
+        "showInView": true,
+        "description": "Standard text input field",
+        "validation": {
+          "minLength": 3,
+          "maxLength": 100
+        }
+      },
+      {
+        "name": "longDescription",
+        "type": "textarea",
+        "label": "Long Description",
+        "required": true,
+        "showInView": true,
+        "description": "Multi-line text area for longer content",
+        "validation": {
+          "maxLength": 2000
+        }
+      },
+      {
+        "name": "quantity",
+        "type": "number",
+        "label": "Quantity",
+        "required": true,
+        "showInResults": true,
+        "showInView": true,
+        "description": "Numeric input for whole numbers",
+        "validation": {
+          "min": 0,
+          "max": 10000
+        }
+      },
+      {
+        "name": "price",
+        "type": "amount",
+        "label": "Price",
+        "required": true,
+        "showInResults": true,
+        "showInView": true,
+        "description": "Currency/amount field with INR prefix",
+        "validation": {
+          "min": 0,
+          "max": 10000000,
+          "step": 0.01
+        }
+      },
+      {
+        "name": "startDate",
+        "type": "date",
+        "label": "Start Date",
+        "required": true,
+        "showInView": true,
+        "description": "Date picker field"
+      },
+      {
+        "name": "endDate",
+        "type": "date",
+        "label": "End Date",
+        "required": false,
+        "showInView": true,
+        "description": "Optional date picker"
+      },
+      {
+        "name": "scheduledTime",
+        "type": "time",
+        "label": "Scheduled Time",
+        "required": false,
+        "showInView": true,
+        "description": "Time picker field"
+      },
+      {
+        "name": "mobileNumber",
+        "type": "mobileNumber",
+        "label": "Mobile Number",
+        "required": true,
+        "showInView": true,
+        "description": "Phone number with validation (10 digits)",
+        "validation": {
+          "min": 1000000000,
+          "max": 9999999999
+        }
+      },
+      {
+        "name": "password",
+        "type": "password",
+        "label": "Secret Code",
+        "required": false,
+        "showInView": false,
+        "description": "Password/masked input field",
+        "validation": {
+          "minLength": 6,
+          "maxLength": 20
+        }
+      },
+      {
+        "name": "searchKeyword",
+        "type": "search",
+        "label": "Search Keyword",
+        "required": false,
+        "showInView": true,
+        "description": "Search input with icon"
+      },
+      {
+        "name": "geoCoordinates",
+        "type": "geolocation",
+        "label": "Geo Coordinates",
+        "required": false,
+        "showInView": true,
+        "description": "Geolocation coordinates input",
+        "validation": {
+          "maxLength": 50
+        }
+      },
+      {
+        "name": "category",
+        "type": "dropdown",
+        "label": "Category",
+        "required": true,
+        "searchable": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "description": "Single-select dropdown with static options",
+        "options": [
+          { "code": "ELECTRONICS", "name": "Electronics" },
+          { "code": "FURNITURE", "name": "Furniture" },
+          { "code": "CLOTHING", "name": "Clothing" },
+          { "code": "FOOD", "name": "Food & Beverages" },
+          { "code": "SERVICES", "name": "Services" }
+        ]
+      },
+      {
+        "name": "department",
+        "type": "dropdown",
+        "label": "Department",
+        "required": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "description": "Dropdown with MDMS data source",
+        "mdms": {
+          "masterName": "Department",
+          "moduleName": "common-masters",
+          "localePrefix": "COMMON_DEPARTMENT_"
+        }
+      },
+      {
+        "name": "priority",
+        "type": "radio",
+        "label": "Priority Level",
+        "required": true,
+        "showInView": true,
+        "description": "Radio button selection (up to 3-4 options)",
+        "options": [
+          { "code": "HIGH", "name": "High Priority" },
+          { "code": "MEDIUM", "name": "Medium Priority" },
+          { "code": "LOW", "name": "Low Priority" }
+        ]
+      },
+      {
+        "name": "status",
+        "type": "radioordropdown",
+        "label": "Status",
+        "required": true,
+        "filterable": true,
+        "showInResults": true,
+        "showInView": true,
+        "description": "Auto-switches between radio (<=3 options) and dropdown (>3 options)",
+        "options": [
+          { "code": "ACTIVE", "name": "Active" },
+          { "code": "INACTIVE", "name": "Inactive" },
+          { "code": "PENDING", "name": "Pending" },
+          { "code": "ARCHIVED", "name": "Archived" }
+        ]
+      },
+      {
+        "name": "isActive",
+        "type": "checkbox",
+        "label": "Is Active",
+        "required": false,
+        "showInView": true,
+        "description": "Checkbox for boolean values (yes/no)"
+      },
+      {
+        "name": "enableNotifications",
+        "type": "toggle",
+        "label": "Enable Notifications",
+        "required": false,
+        "showInView": true,
+        "description": "Toggle switch for on/off settings"
+      },
+      {
+        "name": "selectedTags",
+        "type": "multiselectdropdown",
+        "label": "Tags",
+        "required": false,
+        "showInView": true,
+        "description": "Multi-select dropdown allowing multiple selections",
+        "options": [
+          { "code": "URGENT", "name": "Urgent" },
+          { "code": "IMPORTANT", "name": "Important" },
+          { "code": "REVIEW", "name": "Needs Review" },
+          { "code": "APPROVED", "name": "Approved" },
+          { "code": "FEATURED", "name": "Featured" }
+        ]
+      },
+      {
+        "name": "ward",
+        "type": "locationdropdown",
+        "label": "Ward/Location",
+        "required": false,
+        "filterable": true,
+        "showInView": true,
+        "description": "Location dropdown with hierarchical selection (State > District > Ward)",
+        "locationtype": "ward",
+        "multiSelect": false
+      },
+      {
+        "name": "assignedUsers",
+        "type": "apidropdown",
+        "label": "Assigned Users",
+        "required": false,
+        "showInView": true,
+        "description": "Dropdown populated from API endpoint",
+        "apiConfig": {
+          "url": "/user/_search",
+          "params": { "tenantId": "default" },
+          "optionKey": "name",
+          "optionValue": "uuid"
+        }
+      },
+      {
+        "name": "customData",
+        "type": "component",
+        "label": "Custom Data Component",
+        "required": false,
+        "showInView": true,
+        "description": "Custom React component for complex data entry",
+        "component": "CustomDataComponent",
+        "key": "customData"
+      }
+    ],
+    "api": {
+      "create": "/demo/_create",
+      "update": "/demo/_update",
+      "search": "/demo/_search",
+      "view": "/demo/{id}",
+      "workflow": ""
+    },
+    "auth": {
+      "required": true,
+      "roles": ["SHOWCASE_ADMIN", "SHOWCASE_VIEWER"]
+    },
+    "workflow": {
+      "enabled": false,
+      "businessService": ""
+    },
+    "documents": {
+      "enabled": false,
+      "types": []
+    },
+    "i18n": {
+      "prefix": "SHOWCASE_",
+      "generateKeys": true
+    },
+    "additionalSections": [
+      {
+        "head": "SHOWCASE_ADDITIONAL_SECTION",
+        "subHead": "SHOWCASE_ADDITIONAL_SECTION_DESC",
+        "body": [
+          {
+            "name": "additionalNotes",
+            "type": "textarea",
+            "label": "Additional Notes",
+            "key": "additionalNotes",
+            "required": false,
+            "error": "SHOWCASE_ADDITIONAL_NOTES_ERROR",
+            "validation": {
+              "maxLength": 500
+            }
+          },
+          {
+            "name": "rating",
+            "type": "number",
+            "label": "Rating (1-5)",
+            "key": "rating",
+            "required": false,
+            "error": "SHOWCASE_RATING_ERROR",
+            "validation": {
+              "min": 1,
+              "max": 5
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
