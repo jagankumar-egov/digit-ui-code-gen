@@ -41,10 +41,51 @@ export const transform{{config.entity.name}}CreateData = (formData, tenantId, us
 {{#if (eq type 'checkbox')}}
       {{name}}: Boolean(formData.{{name}}),
 {{/if}}
+{{#if (eq type 'toggle')}}
+      {{name}}: Boolean(formData.{{name}}),
+{{/if}}
 {{#if (eq type 'multiselect')}}
-      {{name}}: formData.{{name}} ? formData.{{name}}.map(item => 
+      {{name}}: formData.{{name}} ? formData.{{name}}.map(item =>
         typeof item === 'object' && item.code ? item.code : item
       ) : [],
+{{/if}}
+{{#if (eq type 'multiselectdropdown')}}
+      {{name}}: formData.{{name}} ? formData.{{name}}.map(item =>
+        typeof item === 'object' && item.code ? item.code : item
+      ) : [],
+{{/if}}
+{{#if (eq type 'radio')}}
+      {{name}}: formData.{{name}}?.code || formData.{{name}},
+{{/if}}
+{{#if (eq type 'radioordropdown')}}
+      {{name}}: formData.{{name}}?.code || formData.{{name}},
+{{/if}}
+{{#if (eq type 'locationdropdown')}}
+      {{name}}: formData.{{name}}?.code || formData.{{name}},
+{{/if}}
+{{#if (eq type 'apidropdown')}}
+      {{name}}: formData.{{name}}?.code || formData.{{name}},
+{{/if}}
+{{#if (eq type 'time')}}
+      {{name}}: formData.{{name}},
+{{/if}}
+{{#if (eq type 'password')}}
+      {{name}}: formData.{{name}},
+{{/if}}
+{{#if (eq type 'search')}}
+      {{name}}: formData.{{name}},
+{{/if}}
+{{#if (eq type 'geolocation')}}
+      {{name}}: formData.{{name}},
+{{/if}}
+{{#if (eq type 'numeric')}}
+      {{name}}: formData.{{name}} ? parseInt(formData.{{name}}) : null,
+{{/if}}
+{{#if (eq type 'url')}}
+      {{name}}: formData.{{name}},
+{{/if}}
+{{#if (eq type 'component')}}
+      {{name}}: formData.{{name}},
 {{/if}}
 {{/each}}
       

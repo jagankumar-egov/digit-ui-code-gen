@@ -51,11 +51,11 @@ Handlebars.registerHelper('constantCase', str => {
 Handlebars.registerHelper('eq', (a, b) => a === b);
 Handlebars.registerHelper('or', (a, b) => a || b);
 Handlebars.registerHelper('and', (a, b) => a && b);
+Handlebars.registerHelper('json', context => JSON.stringify(context || []));
 Handlebars.registerHelper('toLocalizationKey', function (fieldName, prefix) {
   const finalPrefix = prefix || 'MODULE_';
-  // Convert camelCase to CONSTANT_CASE properly
-  const constantCase = fieldName.replace(/([a-z])([A-Z])/g, '$1_$2') // Insert underscore before capitals
-  .toUpperCase();
+  // Convert spaces/hyphens to underscores, then camelCase to CONSTANT_CASE
+  const constantCase = fieldName.replace(/[\s-]+/g, '_').replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase();
   return `${finalPrefix}${constantCase}`;
 });
 async function generateFromConfig(config, outputPath, force = false) {
@@ -128,9 +128,8 @@ async function generatePackageJson(moduleDir, config, result) {
     "react-router-dom": "6.25.1",
     "react-i18next": "15.0.0",
     "styled-components": "5.x",
-    "@egovernments/digit-ui-react-components": "2.0.0-dev-02",
     "@egovernments/digit-ui-svg-components": "2.0.0-dev-01",
-    "@egovernments/digit-ui-components": "2.0.0-dev-19"
+    "@egovernments/digit-ui-components": "2.0.0-dev-31"
   },
   "devDependencies": {
     "@babel/core": "^7.23.3",
@@ -193,7 +192,8 @@ module.exports = {
     react: 'react',
     'react-dom': 'react-dom',
     'react-router-dom': 'react-router-dom',
-    '@egovernments/digit-ui-react-components': '@egovernments/digit-ui-react-components'
+    'react-i18next': 'react-i18next',
+    '@egovernments/digit-ui-components': '@egovernments/digit-ui-components'
   },
   resolve: {
     extensions: ['.js', '.jsx']
@@ -204,7 +204,7 @@ module.exports = {
 }
 async function generateMainModule(moduleDir, config, result) {
   const template = `import React from "react";
-import { CommonScreen } from "@egovernments/digit-ui-components";
+import { CommonScreen, Loader } from "@egovernments/digit-ui-components";
 {{#each screens}}
 {{#if enabled}}
 import {{../entity.name}}{{pascalCase @key}} from "./pages/employee/{{../entity.name}}{{pascalCase @key}}";

@@ -4,9 +4,9 @@ function generateSearchConfig(config) {
   // Register helper to generate localization key
   Handlebars.registerHelper('toLocalizationKey', function(fieldName, prefix) {
     const finalPrefix = prefix || config.i18n?.prefix || 'MODULE_';
-    // Convert camelCase to CONSTANT_CASE properly
     const constantCase = fieldName
-      .replace(/([a-z])([A-Z])/g, '$1_$2') // Insert underscore before capitals
+      .replace(/[\s-]+/g, '_')
+      .replace(/([a-z])([A-Z])/g, '$1_$2')
       .toUpperCase();
     return `${finalPrefix}${constantCase}`;
   });
@@ -88,8 +88,8 @@ function generateSearchConfig(config) {
               options: [
 {{#each options}}
                 {
-                  code: "{{code}}",
-                  name: "{{name}}",
+                  code: "{{{code}}}",
+                  name: "{{{name}}}",
                 },
 {{/each}}
               ],

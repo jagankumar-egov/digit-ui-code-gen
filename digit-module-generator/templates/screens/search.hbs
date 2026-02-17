@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
-import { Header, Loader, Button, AddFilled } from "@egovernments/digit-ui-react-components";
-import { InboxSearchComposer } from "@egovernments/digit-ui-components";
-import { useNavigate, useLocation } from "react-router-dom";
-import {{camelCase config.entity.name}}SearchConfig from "../../configs/{{camelCase config.entity.name}}SearchConfig";
+import { InboxSearchComposer, Button } from "@egovernments/digit-ui-components";
+import { useNavigate } from "react-router-dom";
+import {{camelCase config.entity.name}}SearchConfig from "../../configs/{{pascalCase config.entity.name}}SearchConfig";
 
 const Search{{pascalCase config.entity.name}} = () => {
   const { t } = useTranslation();
@@ -18,8 +17,8 @@ const Search{{pascalCase config.entity.name}} = () => {
           <Button
             label={t(configs?.actionLabel)}
             variation="secondary"
-            icon={<AddFilled />}
-            onButtonClick={() => {
+            icon={"Add"}
+            onClick={() => {
               navigate(`/\${window?.contextPath}/employee/\${configs?.actionLink}`);
             }}
             type="button"

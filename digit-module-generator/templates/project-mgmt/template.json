@@ -239,6 +239,7 @@
         "name": "milestones",
         "type": "component",
         "label": "Project Milestones",
+        "required": false,
         "component": "ProjectMilestonesComponent",
         "key": "milestones"
       }
