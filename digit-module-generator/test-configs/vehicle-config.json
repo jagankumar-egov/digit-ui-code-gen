@@ -1,0 +1,121 @@
+{
+  "module": {
+    "name": "Vehicle Management",
+    "code": "vehicle-mgmt",
+    "description": "Vehicle registration and tracking system",
+    "version": "1.0.0"
+  },
+  "entity": {
+    "name": "Vehicle",
+    "apiPath": "/vehicle-service/v1",
+    "primaryKey": "vehicleId",
+    "displayField": "vehicleNumber"
+  },
+  "screens": {
+    "create": {
+      "enabled": true,
+      "roles": ["VEHICLE_ADMIN"]
+    },
+    "search": {
+      "enabled": true,
+      "roles": ["VEHICLE_ADMIN", "VEHICLE_VIEWER"]
+    },
+    "inbox": {
+      "enabled": false,
+      "roles": []
+    },
+    "view": {
+      "enabled": true,
+      "roles": ["VEHICLE_ADMIN", "VEHICLE_VIEWER"]
+    },
+    "response": {
+      "enabled": true,
+      "types": ["basic"]
+    },
+    "landing": {
+      "enabled": true,
+      "roles": ["VEHICLE_ADMIN", "VEHICLE_VIEWER"]
+    }
+  },
+  "fields": [
+    {
+      "name": "vehicleNumber",
+      "type": "text",
+      "label": "Vehicle Number",
+      "required": true,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true,
+      "validation": {
+        "pattern": "^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$",
+        "maxLength": 15
+      }
+    },
+    {
+      "name": "ownerName",
+      "type": "text",
+      "label": "Owner Name",
+      "required": true,
+      "searchable": true,
+      "showInResults": true,
+      "showInView": true,
+      "validation": {
+        "maxLength": 100
+      }
+    },
+    {
+      "name": "vehicleType",
+      "type": "dropdown",
+      "label": "Vehicle Type",
+      "required": true,
+      "filterable": true,
+      "showInResults": true,
+      "showInView": true,
+      "options": [
+        { "code": "TWO_WHEELER", "name": "Two Wheeler" },
+        { "code": "FOUR_WHEELER", "name": "Four Wheeler" },
+        { "code": "HEAVY_VEHICLE", "name": "Heavy Vehicle" }
+      ]
+    },
+    {
+      "name": "registrationDate",
+      "type": "date",
+      "label": "Registration Date",
+      "required": true,
+      "showInView": true
+    },
+    {
+      "name": "mobileNumber",
+      "type": "mobileNumber",
+      "label": "Contact Number",
+      "required": true,
+      "showInView": true
+    },
+    {
+      "name": "notes",
+      "type": "textarea",
+      "label": "Notes",
+      "required": false,
+      "showInView": true,
+      "validation": {
+        "maxLength": 500
+      }
+    }
+  ],
+  "api": {
+    "create": "/vehicle/_create",
+    "update": "/vehicle/_update",
+    "search": "/vehicle/_search"
+  },
+  "auth": {
+    "required": true,
+    "roles": ["VEHICLE_ADMIN", "VEHICLE_VIEWER"]
+  },
+  "workflow": {
+    "enabled": false
+  },
+  "i18n": {
+    "prefix": "VEHICLE_",
+    "generateKeys": true
+  }
+}
