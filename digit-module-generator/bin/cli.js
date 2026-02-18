@@ -76,9 +76,9 @@ program
 // Screen command
 program
   .command('screen <type>')
-  .description('Generate specific screen type (create, search, inbox, view, response, custom, landing)')
+  .description('Generate specific screen type (create, search, inbox, view, response, custom)')
   .requiredOption('-e, --entity <entity>', 'entity name')
-  .option('-n, --name <name>', 'custom screen name (for custom/landing types)')
+  .option('-n, --name <name>', 'custom screen name (for custom type)')
   .option('--config <config>', 'configuration file')
   .option('-o, --output <path>', 'output directory')
   .action(generateScreen);

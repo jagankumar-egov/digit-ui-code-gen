@@ -31,7 +31,7 @@ Handlebars.registerHelper('toLocalizationKey', function (fieldName, prefix) {
   return `${finalPrefix}${constantCase}`;
 });
 async function generateScreens(screenType, config) {
-  const templatesDir = path.join(__dirname, '../../../templates/screens');
+  const templatesDir = path.join(__dirname, '../../templates/screens');
   const templateFile = path.join(templatesDir, `${screenType}.hbs`);
 
   // Check if template exists

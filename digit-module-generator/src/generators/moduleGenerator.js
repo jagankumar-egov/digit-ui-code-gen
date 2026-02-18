@@ -71,14 +71,26 @@ async function generateFromConfig(config, outputPath, force = false) {
   // Generate configs for enabled screens
   await generateConfigs(moduleDir, config, result);
 
+  // Generate UICustomizations config
+  await generateUICustomizations(moduleDir, config, result);
+
   // Generate screen components
   await generateScreenComponents(moduleDir, config, result);
+
+  // Generate employee router (pages/employee/index.js)
+  await generateEmployeeRouter(moduleDir, config, result);
+
+  // Generate module card (home page card component)
+  await generateModuleCard(moduleDir, config, result);
 
   // Generate utility files
   await generateUtilities(moduleDir, config, result);
 
   // Generate service files
   await generateServiceFiles(moduleDir, config, result);
+
+  // Generate hooks index (hooks/index.js with CustomisedHooks)
+  await generateHooksIndex(moduleDir, config, result);
 
   // Generate i18n files
   if (config.i18n?.generateKeys) {
@@ -166,6 +178,8 @@ async function generatePackageJson(moduleDir, config, result) {
 }
 
 async function generateWebpackConfig(moduleDir, config, result) {
+  const kebabCode = config.module.code.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`).replace(/^-/, '').toLowerCase();
+
   const template = `const path = require('path');
 
 module.exports = {
@@ -174,7 +188,10 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'index.js',
-    libraryTarget: 'commonjs2'
+    library: {
+      name: "@egovernments/digit-ui-module-${kebabCode}",
+      type: "umd",
+    },
   },
   module: {
     rules: [
@@ -199,7 +216,9 @@ module.exports = {
     'react-dom': 'react-dom',
     'react-router-dom': 'react-router-dom',
     'react-i18next': 'react-i18next',
-    '@egovernments/digit-ui-components': '@egovernments/digit-ui-components'
+    '@egovernments/digit-ui-components': '@egovernments/digit-ui-components',
+    '@egovernments/digit-ui-svg-components': '@egovernments/digit-ui-svg-components',
+    'styled-components': 'styled-components'
   },
   resolve: {
     extensions: ['.js', '.jsx']
@@ -211,42 +230,337 @@ module.exports = {
 }
 
 async function generateMainModule(moduleDir, config, result) {
-  const template = `import React from "react";
-import { CommonScreen, Loader } from "@egovernments/digit-ui-components";
-{{#each screens}}
-{{#if enabled}}
-import {{../entity.name}}{{pascalCase @key}} from "./pages/employee/{{../entity.name}}{{pascalCase @key}}";
-{{/if}}
-{{/each}}
+  const entityName = config.entity.name;
 
-const {{entity.name}}Module = ({ stateCode, userType, tenantId }) => {
-  const moduleCode = "{{constantCase module.code}}";
+  // Screen component mappings (same as router, for imports)
+  const screenMappings = {
+    create: { file: `${entityName}Create`, component: `${entityName}Create` },
+    search: { file: `${entityName}Search`, component: `Search${entityName}` },
+    view: { file: `${entityName}View`, component: `${entityName}ViewDetails` },
+    inbox: { file: `${entityName}Inbox`, component: `${entityName}Inbox` },
+    response: { file: `${entityName}Response`, component: `${entityName}Response` },
+    custom: { file: `${entityName}Custom`, component: `${entityName}Custom` },
+  };
+
+  const enabledScreens = Object.entries(config.screens)
+    .filter(([type, sc]) => sc.enabled && screenMappings[type])
+    .map(([type]) => type);
+
+  // Build screen component imports
+  const screenImports = enabledScreens.map(type => {
+    const m = screenMappings[type];
+    return `import ${m.component} from "./pages/employee/${m.file}";`;
+  }).join('\n');
+
+  // Build componentsToRegister entries
+  const screenRegistrations = enabledScreens.map(type => {
+    const m = screenMappings[type];
+    return `  ${m.component},`;
+  }).join('\n');
+
+  const kebabCode = config.module.code.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`).replace(/^-/, '').toLowerCase();
+  const constantCode = config.module.code.replace(/[-\s]/g, '_').replace(/[A-Z]/g, letter => `_${letter}`).replace(/^_/, '').toUpperCase();
+
+  const content = `import React, { useMemo } from "react";
+import { useLocation } from "react-router-dom";
+import { Loader, ErrorBoundary } from "@egovernments/digit-ui-components";
+import { CustomisedHooks } from "./hooks";
+import { UICustomizations } from "./configs/UICustomizations";
+import ${entityName}Card from "./components/${entityName}Card";
+${screenImports}
+
+const EmployeeApp = React.lazy(() => import("./pages/employee"));
+
+const ${entityName}Module = React.memo(({ stateCode, userType, tenants }) => {
+  const tenantId = Digit?.ULBService?.getCurrentTenantId();
+  const location = useLocation();
+  const moduleCode = ["${kebabCode}"];
+
+  const path = useMemo(() => {
+    const pathParts = location.pathname.split("/").filter(Boolean);
+    if (pathParts.length >= 3) {
+      return "/" + pathParts.slice(0, 3).join("/");
+    }
+    return "/" + window?.contextPath + "/employee/${kebabCode}";
+  }, [location.pathname]);
+
   const language = Digit.StoreData.getCurrentLanguage();
   const { isLoading, data: store } = Digit.Services.useStore({ stateCode, moduleCode, language });
 
   if (isLoading) {
-    return <Loader />;
+    return <Loader page={true} variant={"PageLoader"} />;
   }
 
-  return <CommonScreen {...{ stateCode, userType, tenantId, moduleCode, data: store }} />;
+  return (
+    <ErrorBoundary moduleName="${constantCode}">
+      <EmployeeApp
+        path={path}
+        stateCode={stateCode}
+        userType={userType}
+      />
+    </ErrorBoundary>
+  );
+});
+
+const componentsToRegister = {
+  ${entityName}Module,
+  ${entityName}Card,
+${screenRegistrations}
 };
 
-const {{entity.name}}ModuleComponents = {
-  {{entity.name}}Module,
-{{#each screens}}
-{{#if enabled}}
-  {{../entity.name}}{{pascalCase @key}}: React.lazy(() => import("./pages/employee/{{../entity.name}}{{pascalCase @key}}")),
-{{/if}}
-{{/each}}
+const overrideHooks = () => {
+  Object.keys(CustomisedHooks).map((ele) => {
+    if (ele === "Hooks") {
+      Object.keys(CustomisedHooks[ele]).map((hook) => {
+        Object.keys(CustomisedHooks[ele][hook]).map((method) => {
+          setupHooks(hook, method, CustomisedHooks[ele][hook][method]);
+        });
+      });
+    } else if (ele === "Utils") {
+      Object.keys(CustomisedHooks[ele]).map((hook) => {
+        Object.keys(CustomisedHooks[ele][hook]).map((method) => {
+          setupHooks(hook, method, CustomisedHooks[ele][hook][method], false);
+        });
+      });
+    } else {
+      Object.keys(CustomisedHooks[ele]).map((method) => {
+        setupLibraries(ele, method, CustomisedHooks[ele][method]);
+      });
+    }
+  });
 };
 
-export { {{entity.name}}ModuleComponents };`;
+const setupHooks = (HookName, HookFunction, method, isHook = true) => {
+  window.Digit = window.Digit || {};
+  window.Digit[isHook ? "Hooks" : "Utils"] = window.Digit[isHook ? "Hooks" : "Utils"] || {};
+  window.Digit[isHook ? "Hooks" : "Utils"][HookName] = window.Digit[isHook ? "Hooks" : "Utils"][HookName] || {};
+  window.Digit[isHook ? "Hooks" : "Utils"][HookName][HookFunction] = method;
+};
 
-  const compiled = Handlebars.compile(template);
-  const content = compiled(config);
-  
+const setupLibraries = (Library, service, method) => {
+  window.Digit = window.Digit || {};
+  window.Digit[Library] = window.Digit[Library] || {};
+  window.Digit[Library][service] = method;
+};
+
+const updateCustomConfigs = () => {
+  setupLibraries("Customizations", "commonUiConfig", { ...window?.Digit?.Customizations?.commonUiConfig, ...UICustomizations });
+};
+
+const init${entityName}Components = () => {
+  overrideHooks();
+  updateCustomConfigs();
+  Object.entries(componentsToRegister).forEach(([key, value]) => {
+    Digit.ComponentRegistryService.setComponent(key, value);
+  });
+};
+
+export { init${entityName}Components };
+`;
+
   await fs.writeFile(path.join(moduleDir, 'src/Module.js'), content);
   result.files.push('src/Module.js');
+}
+
+async function generateEmployeeRouter(moduleDir, config, result) {
+  // Map screen types to their component import names and file names
+  const screenMappings = {
+    create: { file: `${config.entity.name}Create`, component: `${config.entity.name}Create` },
+    search: { file: `${config.entity.name}Search`, component: `Search${config.entity.name}` },
+    view: { file: `${config.entity.name}View`, component: `${config.entity.name}ViewDetails` },
+    inbox: { file: `${config.entity.name}Inbox`, component: `${config.entity.name}Inbox` },
+    response: { file: `${config.entity.name}Response`, component: `${config.entity.name}Response` },
+    custom: { file: `${config.entity.name}Custom`, component: `${config.entity.name}Custom` },
+  };
+
+  const enabledScreens = Object.entries(config.screens)
+    .filter(([type, screenConfig]) => screenConfig.enabled && screenMappings[type])
+    .map(([screenType]) => screenType);
+
+  // Build imports
+  const imports = enabledScreens.map(screenType => {
+    const mapping = screenMappings[screenType];
+    return `import ${mapping.component} from "./${mapping.file}";`;
+  }).join('\n');
+
+  // Build routes
+  const routes = enabledScreens.map(screenType => {
+    const mapping = screenMappings[screenType];
+    return `        <Route path="${screenType}" element={<${mapping.component} />} />`;
+  }).join('\n');
+
+  const moduleCode = config.module.code;
+  const constantModuleCode = moduleCode.replace(/[-\s]/g, '_').toUpperCase();
+
+  const content = `import React from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { AppContainer } from "@egovernments/digit-ui-react-components";
+import { BreadCrumb } from "@egovernments/digit-ui-components";
+${imports}
+
+const ${config.entity.name}BreadCrumb = ({ location, defaultPath }) => {
+  const { t } = useTranslation();
+  const pathVar = location.pathname.replace(defaultPath + "/", "").split("?")?.[0];
+
+  const crumbs = [
+    {
+      internalLink: "/" + window?.contextPath + "/employee",
+      content: t("HOME"),
+      show: true,
+    },
+    {
+      internalLink: "",
+      content: t("${constantModuleCode}_" + pathVar.toUpperCase().replace(/-/g, "_")),
+      show: true,
+    },
+  ];
+
+  return <BreadCrumb crumbs={crumbs} />;
+};
+
+const App = ({ path, stateCode, userType }) => {
+  const location = useLocation();
+
+  return (
+    <React.Fragment>
+      <div className="wbh-header-container">
+        <${config.entity.name}BreadCrumb location={location} defaultPath={path} />
+      </div>
+      <AppContainer>
+        <Routes>
+${routes}
+        </Routes>
+      </AppContainer>
+    </React.Fragment>
+  );
+};
+
+export default React.memo(App);
+`;
+
+  await fs.writeFile(path.join(moduleDir, 'src/pages/employee/index.js'), content);
+  result.files.push('src/pages/employee/index.js');
+}
+
+async function generateModuleCard(moduleDir, config, result) {
+  const entityName = config.entity.name;
+  const kebabCode = config.module.code.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`).replace(/^-/, '').toLowerCase();
+  const constantModuleCode = config.module.code.replace(/[-\s]/g, '_').toUpperCase();
+  const roles = config.screens.landing?.roles || config.auth?.roles || ['ADMIN'];
+
+  // Build links based on enabled screens (excluding landing itself)
+  const enabledScreens = Object.entries(config.screens)
+    .filter(([type, sc]) => sc.enabled && type !== 'landing' && type !== 'response')
+    .map(([type]) => type);
+
+  const links = enabledScreens.map(screenType => {
+    return `    {
+      label: t("${constantModuleCode}_${screenType.toUpperCase()}"),
+      link: \`/\${window?.contextPath}/employee/${kebabCode}/${screenType}\`,
+      roles: ${JSON.stringify(roles)},
+    }`;
+  }).join(',\n');
+
+  const content = `import { useTranslation } from "react-i18next";
+import React from "react";
+import { EmployeeModuleCard } from "@egovernments/digit-ui-react-components";
+
+const ROLES = ${JSON.stringify(roles)};
+
+const ${entityName}Card = () => {
+  if (!Digit.Utils.didEmployeeHasAtleastOneRole(ROLES)) {
+    return null;
+  }
+
+  const { t } = useTranslation();
+
+  let links = [
+${links}
+  ];
+
+  links = links.filter((link) =>
+    link?.roles && link?.roles?.length > 0
+      ? Digit.Utils.didEmployeeHasAtleastOneRole(link.roles)
+      : true
+  );
+
+  const propsForModuleCard = {
+    Icon: "Collection",
+    moduleName: t("${constantModuleCode}_MODULE_NAME"),
+    kpis: [],
+    links: links,
+  };
+
+  return <EmployeeModuleCard {...propsForModuleCard} />;
+};
+
+export default ${entityName}Card;
+`;
+
+  const componentsDir = path.join(moduleDir, 'src/components');
+  await fs.ensureDir(componentsDir);
+  await fs.writeFile(path.join(componentsDir, `${entityName}Card.js`), content);
+  result.files.push(`src/components/${entityName}Card.js`);
+}
+
+async function generateHooksIndex(moduleDir, config, result) {
+  const entityName = config.entity.name;
+  const camelEntity = entityName.charAt(0).toLowerCase() + entityName.slice(1);
+
+  const hookNames = [
+    `useCreate${entityName}`,
+    `useUpdate${entityName}`,
+    `useSearch${entityName}s`,
+    `useGet${entityName}ById`,
+  ];
+
+  if (config.workflow && config.workflow.enabled) {
+    hookNames.push(`use${entityName}Workflow`);
+  }
+
+  const content = `import {
+  ${hookNames.join(',\n  ')}
+} from "./use${entityName}";
+
+const ${camelEntity}Hooks = {
+  ${hookNames.join(',\n  ')}
+};
+
+export const CustomisedHooks = {
+  Hooks: {
+    ${camelEntity}: ${camelEntity}Hooks,
+  },
+  Utils: {},
+};
+`;
+
+  await fs.writeFile(path.join(moduleDir, 'src/hooks/index.js'), content);
+  result.files.push('src/hooks/index.js');
+}
+
+async function generateUICustomizations(moduleDir, config, result) {
+  const content = `/**
+ * UI Customizations for ${config.module.name}
+ * Add search config customizations here
+ * Each key should match a search config name used in InboxSearchComposer
+ *
+ * Example:
+ * export const UICustomizations = {
+ *   ${config.entity.name}SearchConfig: {
+ *     preProcess: (data) => { return data; },
+ *     additionalCustomizations: (row, key, column, value, t) => {
+ *       switch (key) { default: return value; }
+ *     },
+ *   },
+ * };
+ */
+
+export const UICustomizations = {};
+`;
+
+  await fs.writeFile(path.join(moduleDir, 'src/configs/UICustomizations.js'), content);
+  result.files.push('src/configs/UICustomizations.js');
 }
 
 async function generateConfigs(moduleDir, config, result) {
@@ -283,9 +597,12 @@ async function generateConfigs(moduleDir, config, result) {
 async function generateScreenComponents(moduleDir, config, result) {
   const screensDir = path.join(moduleDir, 'src/pages/employee');
   
+  // Screen types that go in pages/employee/ (landing is a Card component, handled separately)
+  const pageScreenTypes = ['create', 'search', 'view', 'inbox', 'response', 'custom'];
+
   for (const [screenType, screenConfig] of Object.entries(config.screens)) {
-    if (!screenConfig.enabled) continue;
-    
+    if (!screenConfig.enabled || !pageScreenTypes.includes(screenType)) continue;
+
     const screenContent = await generateScreens(screenType, config);
     if (screenContent) {
       const fileName = `${config.entity.name}${screenType.charAt(0).toUpperCase() + screenType.slice(1)}.js`;

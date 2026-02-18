@@ -25,6 +25,10 @@ async function createModule(options) {
       const configPath = path.resolve(options.config);
       if (await fs.pathExists(configPath)) {
         config = await fs.readJson(configPath);
+        // Unwrap if config is nested under a "config" key (template format)
+        if (config.config) {
+          config = config.config;
+        }
         console.log(chalk.green(`✅ Loaded configuration from ${options.config}`));
       } else {
         console.log(chalk.red(`❌ Configuration file not found: ${options.config}`));
