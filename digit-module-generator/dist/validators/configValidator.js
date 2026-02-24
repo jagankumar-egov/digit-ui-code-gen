@@ -132,8 +132,7 @@ const moduleConfigSchema = {
           items: {
             type: 'string',
             minLength: 1
-          },
-          minItems: 1
+          }
         }
       },
       required: ['required'],

@@ -41,8 +41,10 @@ async function createModule(options) {
     if (options.apiSpec) {
       console.log(chalk.blue('📄 Parsing API specification...'));
       const apiConfig = await parseApiSpec(options.apiSpec, options.entity);
-      config = mergeConfigs(config, apiConfig);
-      console.log(chalk.green('✅ API specification parsed successfully'));
+      if (apiConfig) {
+        config = mergeConfigs(config, apiConfig);
+        console.log(chalk.green('✅ API specification parsed successfully'));
+      }
     }
 
     // Interactive prompts if not all info provided
@@ -198,12 +200,16 @@ async function promptForConfig(existingConfig = {}, options = {}) {
     validate: input => input.trim().length > 0 || 'At least one role is required'
   });
 
-  // Workflow
+  // Workflow (required if inbox screen is selected)
   questions.push({
     type: 'confirm',
     name: 'hasWorkflow',
-    message: 'Generate with workflow?',
-    default: false
+    message: answers => {
+      const screens = answers.screens || [];
+      if (screens.includes('inbox')) return 'Generate with workflow? (required for inbox screen)';
+      return 'Generate with workflow?';
+    },
+    default: answers => (answers.screens || []).includes('inbox')
   });
 
   questions.push({

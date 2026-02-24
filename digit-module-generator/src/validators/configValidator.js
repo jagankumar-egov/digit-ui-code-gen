@@ -82,8 +82,7 @@ const moduleConfigSchema = {
         required: { type: 'boolean' },
         roles: {
           type: 'array',
-          items: { type: 'string', minLength: 1 },
-          minItems: 1
+          items: { type: 'string', minLength: 1 }
         }
       },
       required: ['required'],
