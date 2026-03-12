@@ -1,7 +1,34 @@
+/**
+ * Create Config Generator
+ *
+ * Generates {Entity}CreateConfig.js — the FormComposer field schema for the create screen.
+ * FormComposer reads this config to render labeled fields, validation rules, and populators.
+ *
+ * Output structure:
+ *   export const {camelEntity}CreateConfig = [
+ *     { head, subHead, body: [ ...fieldDefinitions ] },
+ *     ...additionalSections
+ *   ]
+ *
+ * Each field definition includes:
+ *   label, isMandatory, key, type, populators (component-specific options/API config)
+ *
+ * BUG-012: option label/description values use triple-stash {{{...}}} to prevent
+ *   Handlebars HTML-encoding &, <, > characters in option names.
+ * BUG-011: mobileNumber's default validation block is wrapped in {{#unless validation}}
+ *   so it isn't duplicated when the config already provides a validation object.
+ */
 const Handlebars = require('handlebars');
 
+/**
+ * Generates the source code for {Entity}CreateConfig.js.
+ *
+ * @param {Object} config - Validated module config
+ * @returns {string} ES module source code as a string
+ */
 function generateCreateConfig(config) {
-  // Register helper to generate localization key
+  // toLocalizationKey is registered on the Handlebars singleton so the template can call it.
+  // Closes over config.i18n.prefix as a fallback when no explicit prefix arg is passed.
   Handlebars.registerHelper('toLocalizationKey', function(fieldName, prefix) {
     const finalPrefix = prefix || config.i18n?.prefix || 'MODULE_';
     const constantCase = fieldName

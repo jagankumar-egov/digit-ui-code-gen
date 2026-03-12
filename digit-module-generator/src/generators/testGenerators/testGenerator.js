@@ -1,7 +1,50 @@
+/**
+ * Test Generator
+ *
+ * Generates the full test suite for a generated DIGIT module.
+ * Called by moduleGenerator.js as the last step in `generateFromConfig()`.
+ *
+ * Directory layout produced under <moduleDir>/__tests__/:
+ *   components/
+ *     {Entity}{ScreenType}.test.js   — one per enabled screen (uses @testing-library/react)
+ *   utils/
+ *     createUtils.test.js            — unit tests for transform / validate functions
+ *     responseUtils.test.js          — unit tests for navigate / format functions
+ *   integration/
+ *     api.test.js                    — end-to-end form-submit → API call flow
+ *     workflow.test.js               — workflow state transitions (only if workflow.enabled)
+ *   setup.js                         — global Digit mock + jest-dom config
+ *   mocks/
+ *     mockData.js                    — per-field typed mock payloads (form, API, search, MDMS)
+ *
+ * Root files:
+ *   jest.config.js                   — Jest config (jsdom, babel-jest, coverage thresholds)
+ *
+ * Component test content is screen-type-aware:
+ *   create  — form render, form submit, required-field validation
+ *   search  — renders search interface, displays results
+ *   view    — renders details, handles missing entity ID
+ *   inbox   — renders inbox, filters items
+ *   response — success banner, error banner, navigation actions
+ *   (all)   — loading state, error state
+ *
+ * Templates are compiled at generation time using Handlebars.
+ * The `pascalCase` and `constantCase` helpers used here are the same ones
+ * registered in moduleGenerator.js — Handlebars is a singleton so they
+ * are already available when this module runs.
+ */
 const fs = require('fs-extra');
 const path = require('path');
 const Handlebars = require('handlebars');
 
+/**
+ * Generates the complete test suite for a module.
+ * Orchestrates the four sub-generators below.
+ *
+ * @param {string} moduleDir  - Root directory of the generated module
+ * @param {Object} config     - Validated module config
+ * @param {Object} result     - Shared result object; generated file paths are pushed to result.files
+ */
 async function generateTestFiles(moduleDir, config, result) {
   const testsDir = path.join(moduleDir, '__tests__');
   

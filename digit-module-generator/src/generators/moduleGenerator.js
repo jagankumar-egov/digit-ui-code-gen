@@ -100,56 +100,73 @@ Handlebars.registerHelper('toLocalizationKey', function(fieldName, prefix) {
   return `${finalPrefix}${constantCase}`;
 });
 
+/**
+ * Main entry point for module generation.
+ * Called by the CLI `create` command after config is loaded and validated.
+ *
+ * @param {Object} config      - Validated module config (from JSON / template / api-spec)
+ * @param {string} outputPath  - Directory where the module folder will be created
+ * @param {boolean} force      - If true, overwrites existing module directory
+ * @param {Object} options     - CLI options
+ * @param {string} options.only - Comma-separated list of categories to generate
+ *                                (base, configs, screens, utils, hooks, services, i18n)
+ *                                If omitted, all categories are generated.
+ * @returns {{ files: string[], warnings: string[] }} - List of generated files and any warnings
+ */
 async function generateFromConfig(config, outputPath, force = false, options = {}) {
   const moduleDir = path.join(outputPath, config.module.code);
   const result = { files: [], warnings: [] };
 
-  // --only flag: restrict which components to generate
-  // Valid values: base, configs, screens, utils, hooks, services, i18n, all (default)
+  // Parse --only flag: split "screens,configs" → ["screens", "configs"]
+  // If --only is not provided, shouldGenerate() returns true for all categories.
   const only = options.only ? options.only.split(',').map(s => s.trim().toLowerCase()) : [];
   const shouldGenerate = (category) => only.length === 0 || only.includes(category);
 
-  // Check if module already exists
+  // Guard: prevent accidental overwrite unless --force is explicitly passed
   if (await fs.pathExists(moduleDir) && !force) {
     throw new Error(`Module directory already exists: ${moduleDir}. Use --force to overwrite.`);
   }
 
-  // Create module directory structure
+  // Create all required folders upfront so individual generators can write directly
   await createDirectoryStructure(moduleDir);
 
+  // --- base: package.json, webpack.config.js, Module.js, README.md ---
   if (shouldGenerate('base')) {
-    // Generate package.json
     await generatePackageJson(moduleDir, config, result);
-    // Generate webpack config
     await generateWebpackConfig(moduleDir, config, result);
-    // Generate main Module.js
     await generateMainModule(moduleDir, config, result);
     await generateReadme(moduleDir, config, result);
   }
 
+  // --- configs: FormComposer/InboxSearchComposer config files + UICustomizations ---
   if (shouldGenerate('configs')) {
     await generateConfigs(moduleDir, config, result);
     await generateUICustomizations(moduleDir, config, result);
   }
 
+  // --- screens: React page components + employee router + module card ---
   if (shouldGenerate('screens')) {
     await generateScreenComponents(moduleDir, config, result);
     await generateEmployeeRouter(moduleDir, config, result);
     await generateModuleCard(moduleDir, config, result);
   }
 
+  // --- utils: form helpers, transformers, formatters, validators ---
   if (shouldGenerate('utils')) {
     await generateUtilities(moduleDir, config, result);
   }
 
+  // --- services: API service class + endpoint constants ---
   if (shouldGenerate('services')) {
     await generateServiceFiles(moduleDir, config, result);
   }
 
+  // --- hooks: hooks/index.js with CustomisedHooks export for Module.js ---
   if (shouldGenerate('hooks')) {
     await generateHooksIndex(moduleDir, config, result);
   }
 
+  // --- i18n: localization JSON files (only if config.i18n.generateKeys is true) ---
   if (shouldGenerate('i18n') && config.i18n?.generateKeys) {
     await generateInternationalization(moduleDir, config, result);
   }
@@ -157,6 +174,20 @@ async function generateFromConfig(config, outputPath, force = false, options = {
   return result;
 }
 
+/**
+ * Creates the standard DIGIT module folder structure upfront.
+ * All sub-generators assume these directories already exist and write directly into them.
+ *
+ * Structure:
+ *   src/configs/       - FormComposer/InboxSearchComposer config files
+ *   src/pages/employee - Screen components + employee router (index.js)
+ *   src/components/    - Module card and shared components
+ *   src/utils/         - Utility functions (transformers, formatters, validators)
+ *   src/hooks/         - React hooks (API calls via react-query)
+ *   src/services/      - API service class and endpoint constants
+ *   localization/      - en_IN.json, hi_IN.json
+ *   __tests__/         - Placeholder test directories
+ */
 async function createDirectoryStructure(moduleDir) {
   const directories = [
     'src',
@@ -178,6 +209,14 @@ async function createDirectoryStructure(moduleDir) {
   }
 }
 
+/**
+ * Generates package.json for the module.
+ * - Package name follows DIGIT convention: @egovernments/digit-ui-module-{kebab-code}
+ * - Version "1.0.0" must match what the host app (micro-ui/web) references as workspace dependency
+ * - peerDependencies: libs provided by the host app at runtime (react, react-router-dom, etc.)
+ * - devDependencies: build-time tools only (webpack, babel)
+ * - "files": ["dist"] — only the built output is published/linked
+ */
 async function generatePackageJson(moduleDir, config, result) {
   const template = `{
   "name": "@egovernments/digit-ui-module-{{kebabCase module.code}}",
@@ -231,6 +270,14 @@ async function generatePackageJson(moduleDir, config, result) {
   result.files.push('package.json');
 }
 
+/**
+ * Generates webpack.config.js for the module.
+ * - Entry point is always src/Module.js
+ * - Output format is UMD so the host app can load it as a library
+ * - externals: these packages are provided by the host app at runtime — do NOT bundle them.
+ *   Bundling react/react-router-dom would cause two copies in the same page → hooks break.
+ *   react-i18next MUST be in externals — BUG-010 fix.
+ */
 async function generateWebpackConfig(moduleDir, config, result) {
   const kebabCode = config.module.code.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`).replace(/^-/, '').toLowerCase();
 
@@ -283,10 +330,27 @@ module.exports = {
   result.files.push('webpack.config.js');
 }
 
+/**
+ * Generates src/Module.js — the module entry point required by DIGIT.
+ *
+ * This file is the contract between the module and the host app. It exports
+ * a single function: init{Entity}Components(), which the host app calls during
+ * bootstrap (inside the useEffect in micro-ui/web/src/index.js).
+ *
+ * init{Entity}Components() does three things:
+ *   1. overrideHooks()       — registers custom hooks into window.Digit.Hooks
+ *   2. updateCustomConfigs() — merges UICustomizations into window.Digit.Customizations
+ *   3. setComponent()        — registers all components (Module, Card, screens) into
+ *                              Digit.ComponentRegistryService so they can be lazy-loaded
+ *
+ * The module component ({Entity}Module) uses React.lazy to load the employee
+ * router and Digit.Services.useStore to fetch localization data before rendering.
+ */
 async function generateMainModule(moduleDir, config, result) {
   const entityName = config.entity.name;
 
-  // Screen component mappings (same as router, for imports)
+  // Maps each screen type to its file name and exported component name.
+  // search is prefixed "Search" to match DIGIT naming convention.
   const screenMappings = {
     create: { file: `${entityName}Create`, component: `${entityName}Create` },
     search: { file: `${entityName}Search`, component: `Search${entityName}` },
@@ -416,8 +480,18 @@ export { init${entityName}Components };
   result.files.push('src/Module.js');
 }
 
+/**
+ * Generates src/pages/employee/index.js — the employee router.
+ *
+ * This is the React Router layout for all screens under /employee/{module-code}/*.
+ * It renders a breadcrumb header and an <AppContainer> wrapping the screen routes.
+ * Each enabled screen gets a <Route path="{screenType}"> entry.
+ *
+ * The breadcrumb auto-generates labels from the URL path using localization keys,
+ * e.g. /employee/hr/create → t("HR_CREATE").
+ */
 async function generateEmployeeRouter(moduleDir, config, result) {
-  // Map screen types to their component import names and file names
+  // Maps screen type → { file: filename without .js, component: exported component name }
   const screenMappings = {
     create: { file: `${config.entity.name}Create`, component: `${config.entity.name}Create` },
     search: { file: `${config.entity.name}Search`, component: `Search${config.entity.name}` },
@@ -497,13 +571,25 @@ export default React.memo(App);
   result.files.push('src/pages/employee/index.js');
 }
 
+/**
+ * Generates src/components/{Entity}Card.js — the module card shown on the home page.
+ *
+ * The card appears in the DIGIT employee portal's module grid. It shows the module
+ * name and a list of links (one per enabled screen). Role-based filtering is applied
+ * at render time — users without the required roles won't see the card or its links.
+ *
+ * response and landing screens are excluded from card links since they are not
+ * directly navigable entry points.
+ *
+ * Roles come from config.auth.roles (or config.screens.landing.roles for backwards compat).
+ */
 async function generateModuleCard(moduleDir, config, result) {
   const entityName = config.entity.name;
   const kebabCode = config.module.code.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`).replace(/^-/, '').toLowerCase();
   const constantModuleCode = config.module.code.replace(/[-\s]/g, '_').toUpperCase();
   const roles = config.screens.landing?.roles || config.auth?.roles || ['ADMIN'];
 
-  // Build links based on enabled screens (excluding landing itself)
+  // Only include screens the user can navigate to directly (not response/landing)
   const enabledScreens = Object.entries(config.screens)
     .filter(([type, sc]) => sc.enabled && type !== 'landing' && type !== 'response')
     .map(([type]) => type);
@@ -558,6 +644,20 @@ export default ${entityName}Card;
   result.files.push(`src/components/${entityName}Card.js`);
 }
 
+/**
+ * Generates src/hooks/index.js — the hooks barrel file.
+ *
+ * Exports CustomisedHooks, which Module.js reads during init to register
+ * custom hooks into window.Digit.Hooks via overrideHooks().
+ *
+ * Structure:
+ *   CustomisedHooks.Hooks.{camelEntity} → all useXxx hooks for this entity
+ *   CustomisedHooks.Utils               → empty by default, add custom utils here
+ *
+ * The actual hook implementations live in src/hooks/use{Entity}.js (not generated
+ * here — that file is generated by the service generator and hooks generator).
+ * If workflow is enabled, use{Entity}Workflow hook is also included.
+ */
 async function generateHooksIndex(moduleDir, config, result) {
   const entityName = config.entity.name;
   const camelEntity = entityName.charAt(0).toLowerCase() + entityName.slice(1);
@@ -593,6 +693,15 @@ export const CustomisedHooks = {
   result.files.push('src/hooks/index.js');
 }
 
+/**
+ * Generates src/configs/UICustomizations.js — placeholder for search/inbox customizations.
+ *
+ * UICustomizations is merged into window.Digit.Customizations.commonUiConfig
+ * by Module.js at startup. InboxSearchComposer reads it to apply pre/post processing
+ * on search results (e.g. custom column renderers, row transformations).
+ *
+ * Generated empty by default. Developers fill in per-config customizations.
+ */
 async function generateUICustomizations(moduleDir, config, result) {
   const content = `/**
  * UI Customizations for ${config.module.name}
@@ -617,15 +726,27 @@ export const UICustomizations = {};
   result.files.push('src/configs/UICustomizations.js');
 }
 
+/**
+ * Generates FormComposer/InboxSearchComposer config files for each enabled screen.
+ *
+ * Each config file defines the field schema for its screen type:
+ *   - {Entity}CreateConfig.js  → FormComposer field definitions (create screen)
+ *   - {Entity}SearchConfig.js  → InboxSearchComposer filter fields (search screen)
+ *   - {Entity}InboxConfig.js   → InboxSearchComposer table columns + filters (inbox)
+ *   - {Entity}ViewConfig.js    → KeyValuePair/table field definitions (view screen)
+ *
+ * custom and response screen types don't need config files — they use their
+ * own internal layout — so they hit the `default: continue` branch and are skipped.
+ */
 async function generateConfigs(moduleDir, config, result) {
   const configsDir = path.join(moduleDir, 'src/configs');
-  
+
   for (const [screenType, screenConfig] of Object.entries(config.screens)) {
     if (!screenConfig.enabled) continue;
-    
+
     let configContent = '';
     const fileName = `${config.entity.name}${screenType.charAt(0).toUpperCase() + screenType.slice(1)}Config.js`;
-    
+
     switch (screenType) {
       case 'create':
         configContent = generateCreateConfig(config);
@@ -648,10 +769,22 @@ async function generateConfigs(moduleDir, config, result) {
   }
 }
 
+/**
+ * Generates React screen components for each enabled screen type.
+ *
+ * Each screen is compiled from a Handlebars template in templates/screens/{type}.hbs
+ * via screenGenerator.js. Output files go to src/pages/employee/{Entity}{Type}.js.
+ *
+ * Supported screen types: create, search, view, inbox, response, custom.
+ * 'landing' is not a screen component — it's the module card (generateModuleCard).
+ *
+ * custom and response screens use self-contained templates that don't need
+ * a separate config file — they are fully standalone components.
+ */
 async function generateScreenComponents(moduleDir, config, result) {
   const screensDir = path.join(moduleDir, 'src/pages/employee');
-  
-  // Screen types that go in pages/employee/ (landing is a Card component, handled separately)
+
+  // landing is handled as a Card component in src/components/, not a page screen
   const pageScreenTypes = ['create', 'search', 'view', 'inbox', 'response', 'custom'];
 
   for (const [screenType, screenConfig] of Object.entries(config.screens)) {
@@ -666,10 +799,21 @@ async function generateScreenComponents(moduleDir, config, result) {
   }
 }
 
+/**
+ * Generates all utility files into src/utils/.
+ *
+ * Six utility files are generated:
+ *   createUtils.js    - Form data preparation for create/update API calls
+ *                       (field-type-specific transformations, e.g. date → epoch)
+ *   searchUtils.js    - Search parameter preparation and result processing
+ *   responseUtils.js  - Response/acknowledgement screen data helpers
+ *   transformers.js   - Generic API request/response shape transformations
+ *   formatters.js     - Display formatting: dates, currency, numbers, mobile
+ *   validators.js     - Form validation rules derived from config field definitions
+ */
 async function generateUtilities(moduleDir, config, result) {
   const utilsDir = path.join(moduleDir, 'src/utils');
 
-  // Generate createUtils.js
   const createUtilsContent = generateCreateUtils(config);
   await fs.writeFile(path.join(utilsDir, 'createUtils.js'), createUtilsContent);
   result.files.push('src/utils/createUtils.js');
@@ -697,6 +841,15 @@ async function generateUtilities(moduleDir, config, result) {
   result.files.push('src/utils/validators.js');
 }
 
+/**
+ * Generates the content string for src/utils/transformers.js.
+ * Contains five transform functions:
+ *   transformCreateData   - form data → API create request body (adds auditDetails)
+ *   transformUpdateData   - form data + existing entity → API update request body
+ *   transformSearchResponse - raw API list response → flat array for table rendering
+ *   transformViewResponse   - raw API response → single entity object for view screen
+ *   transformSearchParams   - form filter values → API search criteria (strips empty values)
+ */
 function generateTransformers(config) {
   const entity = config.entity.name;
   const entityLower = entity.charAt(0).toLowerCase() + entity.slice(1);
@@ -788,6 +941,16 @@ export const transformSearchParams = (searchParams, tenantId) => {
 `;
 }
 
+/**
+ * Generates the content string for src/utils/formatters.js.
+ * All formatters use Indian locale (en-IN) to match DIGIT's target deployment.
+ *   formatDate    - epoch → locale date string (date / datetime / time)
+ *   formatDateDMY - epoch → DD/MM/YYYY string
+ *   formatNumber  - number → Indian numbering system (1,00,000)
+ *   formatCurrency - amount → INR currency string (₹1,00,000.00)
+ *   truncateText  - string → truncated with ellipsis (default 50 chars)
+ *   formatMobile  - mobile number → +91 prefixed string
+ */
 function generateFormatters(config) {
   return `/**
  * Formatters for ${config.entity.name}
@@ -875,11 +1038,23 @@ export const formatMobile = (number) => {
 `;
 }
 
+/**
+ * Generates the content string for src/utils/validators.js.
+ * Validation rules are auto-derived from the create screen's field definitions in config:
+ *   - required, pattern, minLength, maxLength, min, max
+ *
+ * Also includes generic utility validators:
+ *   validateRequired  - checks a list of required fields against form data
+ *   isValidMobile     - Indian 10-digit mobile format (6-9 prefix, optional +91/91)
+ *   isValidEmail      - standard email format check
+ *   isNotFutureDate   - validates date is not in the future
+ *   validateField     - validates a single field against its validationRules entry
+ */
 function generateValidators(config) {
   const entity = config.entity.name;
   const fields = config.screens?.create?.fields || [];
 
-  // Build field-specific validation rules from config
+  // Read required/validation properties from each create field to build validationRules
   const fieldRules = fields
     .filter(f => f.required || f.validation)
     .map(f => {
@@ -982,28 +1157,51 @@ export const validateField = (fieldName, value) => {
 `;
 }
 
+/**
+ * Generates the API service layer into src/services/.
+ *
+ * Delegates to serviceGenerator.js which produces two files:
+ *   {Entity}Service.js  - Service class with create/update/search/getById methods.
+ *                         Each method calls the DIGIT API via Digit.CustomService.
+ *   apiEndpoints.js     - Centralized endpoint constants (create, update, search, view URLs)
+ *                         populated from config.api.* values.
+ */
 async function generateServiceFiles(moduleDir, config, result) {
   const servicesDir = path.join(moduleDir, 'src/services');
   await fs.ensureDir(servicesDir);
-  
-  // Generate services with the correct parameters
+
   await generateServices(config, moduleDir);
   result.files.push(`src/services/${config.entity.name}Service.js`);
   result.files.push('src/services/apiEndpoints.js');
 }
 
+/**
+ * Generates localization JSON files into localization/.
+ *
+ * Produces two files: en_IN.json and hi_IN.json.
+ * Keys are auto-generated from all field names, screen labels, button text, and
+ * error messages using the toLocalizationKey helper (e.g. "employeeName" → "HR_EMPLOYEE_NAME").
+ *
+ * English values are pre-filled with human-readable defaults.
+ * Hindi values are left empty — developers fill them in manually.
+ *
+ * Only runs if config.i18n.generateKeys is true.
+ */
 async function generateInternationalization(moduleDir, config, result) {
-  const localizationDir = path.join(moduleDir, 'localization');
-  
   const languages = ['en_IN', 'hi_IN'];
-  
+
   for (const lang of languages) {
-    // generateI18nFiles is async, so await it
     await generateI18nFiles(config, moduleDir, [lang]);
     result.files.push(`localization/${lang}.json`);
   }
 }
 
+/**
+ * Generates README.md for the module.
+ * Uses a Handlebars template to populate module name, description, enabled screens,
+ * required roles, and API endpoints from config.
+ * Serves as a quick reference for developers working on the generated module.
+ */
 async function generateReadme(moduleDir, config, result) {
   const template = `# {{module.name}}
 

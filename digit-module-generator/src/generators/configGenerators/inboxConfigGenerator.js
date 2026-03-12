@@ -1,7 +1,26 @@
+/**
+ * Inbox Config Generator
+ *
+ * Generates {Entity}InboxConfig.js — the InboxSearchComposer config for the inbox screen.
+ * The inbox is a workflow-aware list view. It uses the /inbox/v2/_search API and
+ * displays both a filter panel and a results table with workflow state columns.
+ *
+ * Only fields with `filterable: true` appear in the filter section.
+ * Only fields with `showInInboxResults: true` appear as table columns.
+ *
+ * The inbox config is only generated when config.screens.inbox.enabled is true.
+ * If config.workflow.enabled is also true, a workflow status column is auto-added.
+ */
 const Handlebars = require('handlebars');
 
+/**
+ * Generates the source code for {Entity}InboxConfig.js.
+ *
+ * @param {Object} config - Validated module config
+ * @returns {string} ES module source code as a string
+ */
 function generateInboxConfig(config) {
-  // Register helper to generate localization key
+  // Registered on the Handlebars singleton — same helper as all other config generators
   Handlebars.registerHelper('toLocalizationKey', function(fieldName, prefix) {
     const finalPrefix = prefix || config.i18n?.prefix || 'MODULE_';
     const constantCase = fieldName

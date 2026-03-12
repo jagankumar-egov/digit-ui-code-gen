@@ -1,5 +1,35 @@
+/**
+ * Create Utils Generator
+ *
+ * Generates src/utils/createUtils.js for the module.
+ * This file handles transforming raw FormComposer form data into API-ready request payloads.
+ *
+ * Key design: Each field type requires a specific transformation:
+ *   - text/textarea/email/password → pass through as-is
+ *   - number/numeric              → parseInt()
+ *   - amount                      → parseFloat()
+ *   - date                        → new Date().getTime() (epoch ms)
+ *   - dropdown/radio/apidropdown  → extract .code from MDMS object
+ *   - checkbox/toggle             → Boolean()
+ *   - multiselectdropdown         → map to array of .code values
+ *   - mobileNumber                → strip non-numeric except +
+ *
+ * BUG-016: All 22 field types must be explicitly handled here.
+ * Missing a type causes `undefined` to appear in the API payload.
+ *
+ * The template is compiled at generation time (not at runtime) using Handlebars.
+ * The output is a plain .js file placed in the generated module.
+ */
 const Handlebars = require('handlebars');
 
+/**
+ * Generates the content of src/utils/createUtils.js.
+ * Uses Handlebars to iterate over config.fields and emit a type-specific
+ * transformation line for each field in the API payload.
+ *
+ * @param {Object} config - Validated module config
+ * @returns {string} JavaScript source code as a string
+ */
 function generateCreateUtils(config) {
   const template = `/**
  * Transform form data to API format for {{config.entity.name}}

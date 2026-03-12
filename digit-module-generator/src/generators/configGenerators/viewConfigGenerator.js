@@ -1,7 +1,26 @@
+/**
+ * View Config Generator
+ *
+ * Generates {Entity}ViewConfig.js — the config for the read-only view/detail screen.
+ * The view screen uses DIGIT's KeyValuePair component to display entity field values.
+ *
+ * Only fields with `showInView: true` appear in the view config.
+ * The config includes the API endpoint (entity.apiPath + api.view) and the
+ * primaryKey used to fetch the entity by ID from the URL param.
+ *
+ * If config.workflow.enabled is true, a workflow timeline section is also included
+ * to show the approval history below the entity details.
+ */
 const Handlebars = require('handlebars');
 
+/**
+ * Generates the source code for {Entity}ViewConfig.js.
+ *
+ * @param {Object} config - Validated module config
+ * @returns {string} ES module source code as a string
+ */
 function generateViewConfig(config) {
-  // Register helper to generate localization key
+  // Registered on the Handlebars singleton — same helper as all other config generators
   Handlebars.registerHelper('toLocalizationKey', function(fieldName, prefix) {
     const finalPrefix = prefix || config.i18n?.prefix || 'MODULE_';
     const constantCase = fieldName

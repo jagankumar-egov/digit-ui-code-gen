@@ -1,3 +1,20 @@
+/**
+ * screen.js — `digit-gen screen <type>` command implementation
+ *
+ * Generates a single screen component independently, without requiring a full module config.
+ * Useful for adding one new screen to an existing module.
+ *
+ * Unlike `digit-gen create --only screens` (which regenerates ALL screens from a full config),
+ * this command generates ONE specific screen type and optionally its config file.
+ *
+ * Supported screen types: create, search, view, inbox, response, custom
+ *
+ * Options:
+ *   --entity <name>   Entity name (PascalCase), e.g. Employee
+ *   --name <name>     Custom component name override
+ *   --output <dir>    Directory to write the screen file into
+ *   --with-config     Also generate the companion config file for the screen
+ */
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
@@ -8,6 +25,12 @@ const { generateSearchConfig } = require('../generators/configGenerators/searchC
 const { generateInboxConfig } = require('../generators/configGenerators/inboxConfigGenerator');
 const { generateViewConfig } = require('../generators/configGenerators/viewConfigGenerator');
 
+/**
+ * Main handler for the `digit-gen screen <type>` command.
+ *
+ * @param {string} screenType - Screen type to generate (create/search/view/inbox/response/custom)
+ * @param {Object} options    - Commander.js parsed options
+ */
 async function generateScreen(screenType, options) {
   try {
     console.log(chalk.blue(`\n🔧 Generating ${screenType} screen...\n`));

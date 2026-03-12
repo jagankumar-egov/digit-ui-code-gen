@@ -1,7 +1,29 @@
+/**
+ * configValidator.js — Module config validation
+ *
+ * Validates a DIGIT module config in two passes before generation begins:
+ *
+ *   Pass 1 — AJV Schema Validation
+ *     Enforces structure: required fields, types, string patterns, and enums.
+ *     Key constraints:
+ *       - module.code must be kebab-case (^[a-z0-9-]+$)
+ *       - entity.name must be PascalCase (^[A-Z][a-zA-Z0-9]+$)
+ *       - i18n.prefix must end with '_'
+ *       - field.type must be one of the 22 supported field types
+ *
+ *   Pass 2 — Business Logic Validation
+ *     Catches interdependencies that JSON Schema cannot express:
+ *       - inbox screen requires workflow.enabled to be true
+ *       - apidropdown fields require an apiConfig.url
+ *       - duplicate field names within a screen
+ *       - auth.roles must be non-empty if any screen uses role-based access
+ *
+ * Both passes accumulate ALL errors before returning so the user sees everything at once.
+ */
 const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
 
-// Create AJV instance with formats support
+// allErrors: true — collect ALL schema violations instead of stopping at the first one
 const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
 

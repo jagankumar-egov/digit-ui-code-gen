@@ -1,13 +1,37 @@
+/**
+ * webAppIntegrator.js — Auto-integration with micro-ui/web host app
+ *
+ * After `digit-gen create` generates a module, this integrator patches the host app
+ * so the module is immediately registered and visible in the browser.
+ *
+ * Two files in the host app are patched:
+ *
+ *   1. {webDir}/package.json
+ *      Adds the module as a local workspace dependency:
+ *        "@egovernments/digit-ui-module-{code}": "1.0.0"
+ *      Version "1.0.0" must match the module's own package.json version.
+ *      Without this, yarn install fails trying to resolve the package from npm registry.
+ *
+ *   2. {webDir}/src/index.js
+ *      Adds the module to enabledModules[] array and calls init{Entity}Components()
+ *      in the try-catch block just before setIsReady(true).
+ *
+ * All three exported functions (integrateWithWebApp, deintegrateFromWebApp, isIntegrated)
+ * are IDEMPOTENT — safe to call multiple times without creating duplicate entries.
+ *
+ * deintegrateFromWebApp is called by the `create --force` flow (when output is inside
+ * micro-ui/web and --only is not set) to clean up stale entries before regeneration.
+ */
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
 
 /**
- * Integrates a generated module into the micro-ui/web host app.
+ * Patches micro-ui/web to register the generated module.
+ * Idempotent — skips if the module is already registered.
  *
- * Updates:
- *   {webDir}/package.json   → adds the module as a local workspace dependency
- *   {webDir}/src/index.js   → registers init{Entity}Components in the useEffect
+ * @param {Object} config  - Validated module config
+ * @param {string} webDir  - Path to the micro-ui/web directory
  */
 async function integrateWithWebApp(config, webDir) {
   const moduleCode        = config.module.code;

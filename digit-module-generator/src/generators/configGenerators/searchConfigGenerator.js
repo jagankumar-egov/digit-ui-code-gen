@@ -1,7 +1,25 @@
+/**
+ * Search Config Generator
+ *
+ * Generates {Entity}SearchConfig.js — the InboxSearchComposer config for the search screen.
+ * Defines the search filter fields and the results table columns.
+ *
+ * Only fields with `searchable: true` appear in the filter section.
+ * Only fields with `showInResults: true` appear as table columns.
+ *
+ * Output is a function (not a plain object) so that localization (`t()`) can be
+ * called at render time — this matches how DIGIT's InboxSearchComposer expects config.
+ */
 const Handlebars = require('handlebars');
 
+/**
+ * Generates the source code for {Entity}SearchConfig.js.
+ *
+ * @param {Object} config - Validated module config
+ * @returns {string} ES module source code as a string
+ */
 function generateSearchConfig(config) {
-  // Register helper to generate localization key
+  // Registered on the Handlebars singleton — same helper as all other config generators
   Handlebars.registerHelper('toLocalizationKey', function(fieldName, prefix) {
     const finalPrefix = prefix || config.i18n?.prefix || 'MODULE_';
     const constantCase = fieldName

@@ -1,8 +1,28 @@
+/**
+ * serviceGenerator.js — API service layer generator
+ *
+ * Generates two files into src/services/:
+ *
+ *   {Entity}Service.js
+ *     A service class with methods: create, update, search, getById.
+ *     Each method calls Digit.CustomService with the appropriate endpoint.
+ *     If config.workflow.enabled, a processWorkflow method is also generated.
+ *     Transform functions are NOT inlined here — they are re-exported from
+ *     utils/transformers.js to keep the service thin and the transforms reusable.
+ *
+ *   apiEndpoints.js
+ *     A constants file exporting all API endpoint paths derived from config.api.*
+ *     Centralising endpoints here avoids scattering hardcoded URLs across screens.
+ *
+ * Handlebars helpers are registered on the singleton here — same set as moduleGenerator.
+ * They must stay in sync across all files that register helpers.
+ */
 const Handlebars = require('handlebars');
 const path = require('path');
 const fs = require('fs-extra');
 
-// Register Handlebars helpers
+// ─── Handlebars Helpers ───────────────────────────────────────────────────────
+// Mirror of helpers in moduleGenerator.js — keep in sync.
 Handlebars.registerHelper('pascalCase', (str) => {
   if (!str) return '';
   return str.charAt(0).toUpperCase() + str.slice(1).replace(/[-_\s]+(.)?/g, (_, c) => c ? c.toUpperCase() : '');

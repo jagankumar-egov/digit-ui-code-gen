@@ -1,9 +1,41 @@
+/**
+ * apiSpecParser.js — OpenAPI/Swagger spec parser
+ *
+ * Converts an OpenAPI 2.x/3.x spec into a partial DIGIT module config,
+ * allowing `digit-gen create --api-spec api.yaml --entity Employee` to
+ * derive field definitions and API endpoints automatically.
+ *
+ * Process:
+ *   1. Load spec (local file or HTTP URL)
+ *   2. Dereference all $ref pointers (SwaggerParser handles circular refs)
+ *   3. Find the schema definition for the requested entity name
+ *   4. Map OpenAPI property types → DIGIT field types:
+ *        string              → text
+ *        integer/number      → number
+ *        boolean             → toggle
+ *        string + enum       → dropdown (options derived from enum values)
+ *        string + format=date → date
+ *        string + format=email → email
+ *        string + format=password → password
+ *   5. Extract API endpoint paths from spec paths matching the entity name
+ *   6. Return a partial config object that is merged with --template or --config base
+ *
+ * Circular reference guard: a WeakSet tracks visited schema objects during
+ * recursive $ref resolution to avoid infinite loops.
+ */
 const fs = require('fs-extra');
 const axios = require('axios');
 const yaml = require('yaml');
 const SwaggerParser = require('swagger-parser');
 const chalk = require('chalk');
 
+/**
+ * Parses an OpenAPI spec and returns a partial DIGIT module config.
+ *
+ * @param {string} specPath   - File path or URL to the OpenAPI spec
+ * @param {string} entityName - PascalCase entity name to extract (e.g. "Employee")
+ * @returns {Object} Partial config with fields and api sections populated
+ */
 async function parseApiSpec(specPath, entityName) {
   try {
     console.log(chalk.blue(`📄 Loading API specification from: ${specPath}`));

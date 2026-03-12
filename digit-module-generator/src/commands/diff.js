@@ -1,6 +1,34 @@
+/**
+ * diff command — `digit-gen diff`
+ *
+ * Side-by-side comparison of two built-in templates.
+ * Useful for deciding which template to start from, or for understanding
+ * what features differ between domain-specific templates.
+ *
+ * Usage:
+ *   digit-gen diff --template "hrms inventory"
+ *   (exactly two space-separated template names)
+ *
+ * Output sections (per config key):
+ *   Module, Entity, Screens, Fields, API, Auth, Workflow, i18n
+ *
+ * For each section the diff reports:
+ *   📌 Only in <template1> — keys/fields present only in the first template
+ *   📌 Only in <template2> — keys/fields present only in the second template
+ *   ↔  Different values    — keys present in both but with differing values
+ *   ✅ Same in both        — shared keys with identical values
+ *
+ * A summary count of total differences is printed at the end.
+ */
 const chalk = require('chalk');
 const { listAvailableTemplates, getTemplateConfig } = require('../templates/templateManager');
 
+/**
+ * Entry point for `digit-gen diff`.
+ *
+ * @param {Object} options
+ * @param {string} options.template - Two space-separated template names to compare
+ */
 async function diffTemplates(options) {
   try {
     const templateNames = options.template.split(' ').map(name => name.trim());
