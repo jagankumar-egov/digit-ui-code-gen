@@ -7,6 +7,7 @@ const { generateFromConfig } = require('../generators/moduleGenerator');
 const { parseApiSpec } = require('../parsers/apiSpecParser');
 const { validateModuleConfig } = require('../validators/configValidator');
 const { getTemplateConfig } = require('../templates/templateManager');
+const { integrateWithWebApp, deintegrateFromWebApp, isIntegrated } = require('../integrators/webAppIntegrator');
 
 async function createModule(options) {
   try {
@@ -79,25 +80,74 @@ async function createModule(options) {
       return;
     }
 
+    // If --force (full regeneration, not partial --only), clean up stale integration entries
+    if (options.force && !options.only) {
+      const resolvedOutput = path.resolve(options.output);
+      const defaultWebDir = path.resolve('./micro-ui/web');
+      if (resolvedOutput.startsWith(defaultWebDir)) {
+        const alreadyIntegrated = await isIntegrated(config, defaultWebDir);
+        if (alreadyIntegrated) {
+          console.log(chalk.yellow('\n⚠️  Detected stale integration entries — cleaning up before regeneration...'));
+          await deintegrateFromWebApp(config, defaultWebDir);
+        }
+      }
+    }
+
     // Generate module
     console.log(chalk.blue('\n⚙️  Generating module files...'));
     const spinner = ora('Creating module structure...').start();
-    
+
     try {
-      const result = await generateFromConfig(config, options.output, options.force);
+      const result = await generateFromConfig(config, options.output, options.force, { only: options.only });
       spinner.succeed('Module generated successfully!');
-      
+
       console.log(chalk.green('\n🎉 Module generation completed!\n'));
       console.log(chalk.white('📁 Files created:'));
       result.files.forEach(file => {
         console.log(chalk.gray(`   ${file}`));
       });
-      
-      console.log(chalk.blue('\n📖 Next steps:'));
-      console.log(chalk.white('1. Navigate to your module directory'));
-      console.log(chalk.white('2. Run npm install to install dependencies'));
-      console.log(chalk.white('3. Update the generated configs as needed'));
-      console.log(chalk.white('4. Test your module integration'));
+
+      // Auto-detect micro-ui/web directory, then ask to integrate
+      const defaultWebDir = './micro-ui/web';
+      const defaultWebDirExists = await fs.pathExists(path.join(defaultWebDir, 'src', 'index.js'));
+
+      const integrationMessage = defaultWebDirExists
+        ? `Integrate this module into the host app? (found at ${defaultWebDir})`
+        : 'Integrate this module into the micro-ui/web host app?';
+
+      const { shouldIntegrate } = await inquirer.prompt([{
+        type: 'confirm',
+        name: 'shouldIntegrate',
+        message: integrationMessage,
+        default: defaultWebDirExists
+      }]);
+
+      if (shouldIntegrate) {
+        let resolvedWebDir = path.resolve(defaultWebDir);
+
+        // Only ask for path if auto-detected dir doesn't exist
+        if (!defaultWebDirExists) {
+          const { webDir } = await inquirer.prompt([{
+            type: 'input',
+            name: 'webDir',
+            message: 'Path to micro-ui/web directory:',
+            validate: async input => {
+              const resolved = path.resolve(input);
+              const exists = await fs.pathExists(path.join(resolved, 'src', 'index.js'));
+              return exists || `No src/index.js found at ${resolved} — is this the right path?`;
+            }
+          }]);
+          resolvedWebDir = path.resolve(webDir);
+        }
+
+        await integrateWithWebApp(config, resolvedWebDir);
+      } else {
+        console.log(chalk.blue('\n📖 Next steps:'));
+        console.log(chalk.white('1. Navigate to your module directory'));
+        console.log(chalk.white('2. Run npm install to install dependencies'));
+        console.log(chalk.white('3. Update the generated configs as needed'));
+        console.log(chalk.white('4. Test your module integration'));
+      }
       
       if (result.warnings && result.warnings.length > 0) {
         console.log(chalk.yellow('\n⚠️  Warnings:'));
@@ -370,32 +420,66 @@ function isConfigComplete(config) {
 }
 
 async function showPreview(config, outputPath) {
-  console.log(chalk.blue('\n📋 Preview of files to be generated:\n'));
-  
   const moduleDir = path.join(outputPath, config.module.code);
-  
+
+  // Config summary
+  console.log(chalk.blue('\n📊 Configuration Summary:\n'));
+  console.log(chalk.white(`   Module:   ${config.module.name} (${config.module.code})`));
+  console.log(chalk.white(`   Entity:   ${config.entity.name}`));
+  console.log(chalk.white(`   API Path: ${config.entity.apiPath || '/api/v1'}`));
+
+  const enabledScreens = Object.keys(config.screens || {}).filter(s => config.screens[s].enabled);
+  console.log(chalk.white(`   Screens:  ${enabledScreens.join(', ') || 'none'}`));
+
+  const createFields = config.screens?.create?.fields || [];
+  const searchFields = config.screens?.search?.fields || [];
+  console.log(chalk.white(`   Fields:   ${createFields.length} create, ${searchFields.length} search`));
+
+  console.log(chalk.white(`   Auth:     ${config.auth?.required ? `yes (${(config.auth.roles || []).join(', ')})` : 'no'}`));
+  console.log(chalk.white(`   Workflow: ${config.workflow?.enabled ? 'yes' : 'no'}`));
+  console.log(chalk.white(`   i18n:     ${config.i18n?.generateKeys ? 'yes' : 'no'}`));
+
+  // File list
+  console.log(chalk.blue('\n📋 Files to be generated:\n'));
+
   const files = [
     'package.json',
-    'webpack.config.js', 
+    'webpack.config.js',
     'src/Module.js',
     'README.md'
   ];
 
   // Add screen files
-  Object.keys(config.screens).forEach(screen => {
+  Object.keys(config.screens || {}).forEach(screen => {
     if (config.screens[screen].enabled) {
-      files.push(`src/configs/${config.entity.name}${screen}Config.js`);
-      files.push(`src/pages/employee/${config.entity.name}${screen}.js`);
+      const name = config.entity.name;
+      const screenKey = screen.charAt(0).toUpperCase() + screen.slice(1);
+      if (!['response', 'custom'].includes(screen)) {
+        files.push(`src/configs/${name}${screenKey}Config.js`);
+      }
+      files.push(`src/pages/employee/${name}${screenKey}.js`);
     }
   });
+
+  files.push('src/pages/employee/index.js');
+  files.push('src/configs/UICustomizations.js');
+  files.push(`src/components/${config.entity.name}Card.js`);
 
   // Add utility files
   files.push('src/utils/createUtils.js');
   files.push('src/utils/searchUtils.js');
   files.push('src/utils/responseUtils.js');
+  files.push('src/utils/transformers.js');
+  files.push('src/utils/formatters.js');
+  files.push('src/utils/validators.js');
 
   // Add service files
-  files.push(`src/services/${config.entity.name.toLowerCase()}Service.js`);
+  files.push(`src/services/${config.entity.name}Service.js`);
+  files.push('src/services/apiEndpoints.js');
+
+  // Add hooks
+  files.push('src/hooks/index.js');
+  files.push(`src/hooks/use${config.entity.name}.js`);
 
   // Add i18n files
   if (config.i18n?.generateKeys) {
@@ -404,11 +488,12 @@ async function showPreview(config, outputPath) {
   }
 
   files.forEach(file => {
-    console.log(chalk.gray(`   ${path.join(moduleDir, file)}`));
+    console.log(chalk.gray(`   ${file}`));
   });
 
   console.log(chalk.blue(`\n📁 Total files: ${files.length}`));
-  console.log(chalk.yellow('\n⚠️  This is a preview. Use --dry-run=false to generate files.'));
+  console.log(chalk.white(`   Output: ${moduleDir}`));
+  console.log(chalk.yellow('\n⚠️  Dry run — no files created. Remove --dry-run to generate.'));
 }
 
 module.exports = { createModule };

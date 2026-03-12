@@ -7,8 +7,8 @@
     "digit-gen": "bin/cli.js"
   },
   "scripts": {
-    "build": "babel src -d dist",
-    "dev": "babel src -d dist --watch",
+    "build": "babel src -d dist --copy-files",
+    "dev": "babel src -d dist --watch --copy-files",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src/**/*.js",

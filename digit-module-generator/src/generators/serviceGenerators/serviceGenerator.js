@@ -182,52 +182,11 @@ export const use{{config.entity.name}}Workflow = () => {
 };
 {{/if}}
 
-/**
- * Utility function to transform create data
- * @param {Object} formData - Form data from FormComposer
- * @param {string} tenantId - Tenant ID
- * @param {Object} userInfo - Current user information
- * @returns {Object} Transformed data for API
- */
-export const transformCreate{{config.entity.name}}Data = (formData, tenantId, userInfo) => {
-  return {
-    {{config.entity.name}}: {
-      ...formData,
-      tenantId,
-      auditDetails: {
-        createdBy: userInfo?.uuid,
-        createdTime: Date.now(),
-        lastModifiedBy: userInfo?.uuid,
-        lastModifiedTime: Date.now()
-      }
-    }
-  };
-};
+// Re-export transforms from utils for backwards compatibility
+// The actual transform logic lives in ../utils/transformers.js
+export { transformCreateData, transformUpdateData, transformSearchResponse, transformViewResponse } from '../utils/transformers';
 
-/**
- * Utility function to transform update data
- * @param {Object} formData - Form data from FormComposer
- * @param {Object} existingData - Existing entity data
- * @param {string} tenantId - Tenant ID
- * @param {Object} userInfo - Current user information
- * @returns {Object} Transformed data for API
- */
-export const transformUpdate{{config.entity.name}}Data = (formData, existingData, tenantId, userInfo) => {
-  return {
-    {{config.entity.name}}: {
-      ...existingData,
-      ...formData,
-      tenantId,
-      auditDetails: {
-        ...existingData.auditDetails,
-        lastModifiedBy: userInfo?.uuid,
-        lastModifiedTime: Date.now()
-      }
-    }
-  };
-};
-
-// Export all hooks and utilities
+// Export all hooks
 export default {
   useCreate{{config.entity.name}},
   useUpdate{{config.entity.name}},
@@ -236,8 +195,6 @@ export default {
 {{#if config.workflow.enabled}}
   use{{config.entity.name}}Workflow,
 {{/if}}
-  transformCreate{{config.entity.name}}Data,
-  transformUpdate{{config.entity.name}}Data,
   {{camelCase config.entity.name}}RequestConfigs
 };`;
 

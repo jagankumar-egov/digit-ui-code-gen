@@ -56,6 +56,7 @@ program
   .option('--config <config>', 'configuration file')
   .option('--force', 'overwrite existing files')
   .option('--dry-run', 'preview generated files without creating them')
+  .option('--only <components>', 'generate only specific components (base,configs,screens,utils,hooks,services,i18n)')
   .action(createModule);
 
 // Templates command

@@ -1,215 +1,185 @@
-# DIGIT Module Generator - Field Types Reference
+# Field Types Reference
 
-This document provides a comprehensive reference for all supported field types in the DIGIT Module Generator.
-
----
-
-## Quick Reference Table
-
-| Field Type | Component | Use Case |
-|------------|-----------|----------|
-| `text` | TextInput | Single-line text input |
-| `textarea` | TextArea | Multi-line text input |
-| `number` | TextInput (numeric) | Whole numbers |
-| `numeric` | TextInput (numeric) | Same as number |
-| `amount` | TextInput with prefix | Currency/money values |
-| `date` | DatePicker | Date selection |
-| `time` | TimePicker | Time selection |
-| `datetime` | DateTimePicker | Date and time selection |
-| `password` | TextInput (password) | Masked/secret input |
-| `email` | TextInput (email) | Email addresses |
-| `url` | TextInput (url) | Web URLs |
-| `search` | TextInput (search) | Search with icon |
-| `geolocation` | TextInput | GPS coordinates |
-| `mobileNumber` | MobileNumber | Phone numbers |
-| `dropdown` | Dropdown | Single-select list |
-| `radio` | RadioButtons | Single-select (few options) |
-| `radioordropdown` | Auto-switch | Radio or dropdown based on count |
-| `checkbox` | Checkbox | Boolean yes/no |
-| `toggle` | Toggle | On/off switch |
-| `multiselect` | MultiSelectDropdown | Multiple selections |
-| `multiselectdropdown` | MultiSelectDropdown | Same as multiselect |
-| `locationdropdown` | LocationDropdown | Hierarchical location |
-| `apidropdown` | APIDropdown | API-driven options |
-| `file` | FileUpload | File attachments |
-| `component` | Custom Component | Complex custom UI |
+This document covers all supported field types in the `digit-gen` module generator. Each field type maps to a DIGIT UI component rendered by `FormComposerV2`.
 
 ---
 
-## Detailed Field Type Documentation
+## Field Types Overview
 
-### 1. text
+| Type | DIGIT Component | Category | Description |
+|------|----------------|----------|-------------|
+| `text` | TextInput | Text Input | Standard single-line text input |
+| `numeric` | TextInput (type=numeric) | Text Input | Numeric text input variant |
+| `number` | TextInput (type=number) | Text Input | Number input with spinner controls |
+| `date` | TextInput (type=date) | Text Input | Date picker input |
+| `time` | TextInput (type=time) | Text Input | Time picker input |
+| `password` | TextInput (type=password) | Text Input | Masked password input |
+| `search` | TextInput (type=search) | Text Input | Search input with icon |
+| `geolocation` | TextInput (type=geolocation) | Text Input | Geolocation coordinates input |
+| `email` | TextInput (type=email) | Text Input | Email input with built-in pattern |
+| `url` | TextInput (type=url) | Text Input | URL input |
+| `amount` | TextInput (type=amount) | Text Input | Currency input with INR prefix |
+| `textarea` | TextArea | Text Input | Multi-line text area |
+| `dropdown` | Dropdown | Selection | Single-select dropdown |
+| `radio` | RadioButtons | Selection | Radio button group |
+| `radioordropdown` | RadioButtons or Dropdown | Selection | Auto-switches based on options count |
+| `multiselectdropdown` | MultiSelectDropdown | Selection | Multi-select dropdown |
+| `toggle` | Toggle | Boolean | On/off toggle switch |
+| `checkbox` | CheckBox | Boolean | Boolean checkbox |
+| `mobileNumber` | MobileNumber | Specialized | Phone number input with default validation |
+| `locationdropdown` | LocationDropdown | Specialized | Boundary hierarchy picker (State > District > Ward) |
+| `apidropdown` | Dropdown (API-sourced) | Specialized | Dropdown populated from API endpoint |
+| `component` | Custom React Component | Specialized | Renders a user-defined React component |
 
-**Description:** Standard single-line text input field.
+---
 
-**Configuration:**
+## Text Input Types
+
+These types all render as `TextInput` variants in DIGIT's FormComposerV2. They differ by the `type` property passed to the component, which controls browser input behavior (keyboard, validation hints, etc.).
+
+### text
+
+Standard single-line text input.
+
+**Required properties:** `name`, `type`, `label`, `required`
+
+**Optional properties:** `description`, `validation`, `inline`, `key`
+
 ```json
 {
-  "name": "employeeName",
+  "name": "demoName",
   "type": "text",
-  "label": "Employee Name",
+  "label": "Demo Name",
   "required": true,
-  "description": "Enter the full name",
+  "description": "Standard text input field",
   "validation": {
-    "minLength": 2,
-    "maxLength": 100,
-    "pattern": "^[a-zA-Z ]+$"
+    "pattern": "^[a-zA-Z ]+$",
+    "minLength": 3,
+    "maxLength": 100
   }
 }
 ```
 
-**Validation Options:**
-- `minLength`: Minimum character count
-- `maxLength`: Maximum character count
-- `pattern`: Regex pattern for validation
+### numeric
 
----
+Numeric text input variant. Behaves like `text` but with numeric input semantics.
 
-### 2. textarea
+**Required properties:** `name`, `type`, `label`, `required`
 
-**Description:** Multi-line text input for longer content.
+**Optional properties:** `description`, `validation`, `inline`, `key`
 
-**Configuration:**
 ```json
 {
-  "name": "description",
-  "type": "textarea",
-  "label": "Description",
-  "required": true,
+  "name": "score",
+  "type": "numeric",
+  "label": "Score",
+  "required": false,
   "validation": {
-    "maxLength": 2000
+    "min": 0,
+    "max": 100
   }
 }
 ```
 
-**Best Practices:**
-- Use for descriptions, comments, addresses
-- Set reasonable maxLength to prevent abuse
+### number
 
----
+Number input with spinner controls, used for whole numbers.
 
-### 3. number / numeric
+**Required properties:** `name`, `type`, `label`, `required`
 
-**Description:** Numeric input field for whole numbers or decimals.
+**Optional properties:** `description`, `validation`, `inline`, `key`
 
-**Configuration:**
 ```json
 {
   "name": "quantity",
   "type": "number",
   "label": "Quantity",
   "required": true,
+  "description": "Numeric input for whole numbers",
   "validation": {
     "min": 0,
-    "max": 10000,
-    "step": 1
+    "max": 10000
   }
 }
 ```
 
-**Validation Options:**
-- `min`: Minimum allowed value
-- `max`: Maximum allowed value
-- `step`: Increment step (use decimals like 0.01 for currency)
+### amount
 
----
+Currency/amount input. Automatically adds an INR prefix to the field. Supports `step` for decimal precision.
 
-### 4. amount
+**Required properties:** `name`, `type`, `label`, `required`
 
-**Description:** Currency/money input with INR prefix (₹).
+**Optional properties:** `description`, `validation` (including `step`), `inline`, `key`
 
-**Configuration:**
+**Generated config adds:**
+- `prefix: "Rs "` in populators
+
 ```json
 {
-  "name": "estimatedCost",
+  "name": "price",
   "type": "amount",
-  "label": "Estimated Cost",
+  "label": "Price",
   "required": true,
+  "description": "Currency/amount field with INR prefix",
   "validation": {
     "min": 0,
-    "max": 100000000,
+    "max": 10000000,
     "step": 0.01
   }
 }
 ```
 
-**Generated Config:**
-```javascript
-{
-  type: "amount",
-  populators: {
-    prefix: "₹ ",
-    step: "0.01"
-  }
-}
-```
+### date
 
----
+Date picker input. Should not use `minLength`/`maxLength` validation (enforced by config validator).
 
-### 5. date
+**Required properties:** `name`, `type`, `label`, `required`
 
-**Description:** Date picker for selecting dates.
+**Optional properties:** `description`, `inline`, `key`
 
-**Configuration:**
 ```json
 {
   "name": "startDate",
   "type": "date",
   "label": "Start Date",
-  "required": true
+  "required": true,
+  "description": "Date picker field"
 }
 ```
 
-**Notes:**
-- Uses epoch timestamp internally
-- Displayed in locale format
+### time
 
----
+Time picker input.
 
-### 6. time
+**Required properties:** `name`, `type`, `label`, `required`
 
-**Description:** Time picker for selecting time.
+**Optional properties:** `description`, `inline`, `key`
 
-**Configuration:**
 ```json
 {
   "name": "scheduledTime",
   "type": "time",
   "label": "Scheduled Time",
-  "required": false
+  "required": false,
+  "description": "Time picker field"
 }
 ```
 
----
+### password
 
-### 7. datetime
+Masked input for sensitive data.
 
-**Description:** Combined date and time picker.
+**Required properties:** `name`, `type`, `label`, `required`
 
-**Configuration:**
+**Optional properties:** `description`, `validation`, `inline`, `key`
+
 ```json
 {
-  "name": "appointmentDateTime",
-  "type": "datetime",
-  "label": "Appointment Date & Time",
-  "required": true
-}
-```
-
----
-
-### 8. password
-
-**Description:** Masked input for sensitive data.
-
-**Configuration:**
-```json
-{
-  "name": "secretCode",
+  "name": "password",
   "type": "password",
   "label": "Secret Code",
   "required": false,
-  "showInView": false,
+  "description": "Password/masked input field",
   "validation": {
     "minLength": 6,
     "maxLength": 20
@@ -217,131 +187,151 @@ This document provides a comprehensive reference for all supported field types i
 }
 ```
 
-**Important:** Set `showInView: false` to prevent display in view screens.
+### search
 
----
+Text input with a search icon. Useful for keyword/filter fields.
 
-### 9. email
+**Required properties:** `name`, `type`, `label`, `required`
 
-**Description:** Email input with built-in validation.
+**Optional properties:** `description`, `validation`, `inline`, `key`
 
-**Configuration:**
-```json
-{
-  "name": "email",
-  "type": "email",
-  "label": "Email Address",
-  "required": true
-}
-```
-
-**Auto-added Validation:** Email pattern regex is automatically applied.
-
----
-
-### 10. url
-
-**Description:** URL input for web addresses.
-
-**Configuration:**
-```json
-{
-  "name": "website",
-  "type": "url",
-  "label": "Website URL",
-  "required": false
-}
-```
-
----
-
-### 11. search
-
-**Description:** Search input with search icon.
-
-**Configuration:**
 ```json
 {
   "name": "searchKeyword",
   "type": "search",
-  "label": "Search",
-  "required": false
+  "label": "Search Keyword",
+  "required": false,
+  "description": "Search input with icon"
 }
 ```
 
----
+### geolocation
 
-### 12. geolocation
+Geolocation coordinates input field.
 
-**Description:** Input for GPS coordinates.
+**Required properties:** `name`, `type`, `label`, `required`
 
-**Configuration:**
+**Optional properties:** `description`, `validation`, `inline`, `key`
+
 ```json
 {
   "name": "geoCoordinates",
   "type": "geolocation",
-  "label": "Geo Location",
+  "label": "Geo Coordinates",
   "required": false,
+  "description": "Geolocation coordinates input",
   "validation": {
     "maxLength": 50
   }
 }
 ```
 
-**Expected Format:** "latitude,longitude" (e.g., "12.9716,77.5946")
+### email
 
----
+Email input with built-in pattern validation. If no pattern is provided in validation, the config validator automatically applies: `^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$`.
 
-### 13. mobileNumber
+**Required properties:** `name`, `type`, `label`, `required`
 
-**Description:** Phone number input with country code support.
+**Optional properties:** `description`, `validation`, `inline`, `key`
 
-**Configuration:**
 ```json
 {
-  "name": "contactNumber",
-  "type": "mobileNumber",
-  "label": "Contact Number",
+  "name": "contactEmail",
+  "type": "email",
+  "label": "Contact Email",
   "required": true,
   "validation": {
-    "min": 1000000000,
-    "max": 9999999999
+    "maxLength": 100
   }
 }
 ```
 
-**Notes:**
-- Validates 10-digit Indian mobile numbers
-- min/max validation is required
+### url
+
+URL input field.
+
+**Required properties:** `name`, `type`, `label`, `required`
+
+**Optional properties:** `description`, `validation`, `inline`, `key`
+
+```json
+{
+  "name": "website",
+  "type": "url",
+  "label": "Website URL",
+  "required": false,
+  "validation": {
+    "maxLength": 255
+  }
+}
+```
 
 ---
 
-### 14. dropdown
+## Multi-line Text
 
-**Description:** Single-select dropdown with options.
+### textarea
 
-**Configuration with Static Options:**
+Multi-line text area for longer content. Maps to the `TextArea` component.
+
+**Required properties:** `name`, `type`, `label`, `required`
+
+**Optional properties:** `description`, `validation`, `inline`, `key`
+
 ```json
 {
-  "name": "priority",
-  "type": "dropdown",
-  "label": "Priority",
+  "name": "longDescription",
+  "type": "textarea",
+  "label": "Long Description",
   "required": true,
+  "description": "Multi-line text area for longer content",
+  "validation": {
+    "maxLength": 2000
+  }
+}
+```
+
+---
+
+## Selection Types
+
+### dropdown
+
+Single-select dropdown. Options can come from a static list or from MDMS (Master Data Management Service).
+
+**Required properties:** `name`, `type`, `label`, `required`, and one of `options` or `mdms`
+
+**Optional properties:** `description`, `validation`, `inline`, `key`
+
+**Generated config adds:**
+- `optionsKey: "name"` in populators
+
+**With static options:**
+
+```json
+{
+  "name": "category",
+  "type": "dropdown",
+  "label": "Category",
+  "required": true,
+  "description": "Single-select dropdown with static options",
   "options": [
-    { "code": "HIGH", "name": "High" },
-    { "code": "MEDIUM", "name": "Medium" },
-    { "code": "LOW", "name": "Low" }
+    { "code": "ELECTRONICS", "name": "Electronics" },
+    { "code": "FURNITURE", "name": "Furniture" },
+    { "code": "CLOTHING", "name": "Clothing" }
   ]
 }
 ```
 
-**Configuration with MDMS:**
+**With MDMS data source:**
+
 ```json
 {
   "name": "department",
   "type": "dropdown",
   "label": "Department",
   "required": true,
+  "description": "Dropdown with MDMS data source",
   "mdms": {
     "masterName": "Department",
     "moduleName": "common-masters",
@@ -350,164 +340,225 @@ This document provides a comprehensive reference for all supported field types i
 }
 ```
 
----
+### radio
 
-### 15. radio
+Radio button group for selecting one option from a small set (typically 2-4 options).
 
-**Description:** Radio button group for single selection.
+**Required properties:** `name`, `type`, `label`, `required`, `options`
 
-**Configuration:**
+**Optional properties:** `description`, `inline`, `key`
+
+**Generated config adds:**
+- `optionsKey: "name"` in populators
+
 ```json
 {
-  "name": "gender",
+  "name": "priority",
   "type": "radio",
-  "label": "Gender",
+  "label": "Priority Level",
   "required": true,
+  "description": "Radio button selection (up to 3-4 options)",
   "options": [
-    { "code": "MALE", "name": "Male" },
-    { "code": "FEMALE", "name": "Female" },
-    { "code": "OTHER", "name": "Other" }
+    { "code": "HIGH", "name": "High Priority" },
+    { "code": "MEDIUM", "name": "Medium Priority" },
+    { "code": "LOW", "name": "Low Priority" }
   ]
 }
 ```
 
-**Best Practices:**
-- Use for 2-4 options
-- Use dropdown for more options
+### radioordropdown
 
----
+Adaptive selection that automatically switches between `RadioButtons` (when 3 or fewer options) and `Dropdown` (when more than 3 options). Supports both static options and MDMS.
 
-### 16. radioordropdown
+**Required properties:** `name`, `type`, `label`, `required`, and one of `options` or `mdms`
 
-**Description:** Auto-switches between radio and dropdown based on option count.
+**Optional properties:** `description`, `inline`, `key`
 
-**Configuration:**
+**Generated config adds:**
+- `optionsKey: "name"` in populators
+
 ```json
 {
   "name": "status",
   "type": "radioordropdown",
   "label": "Status",
   "required": true,
+  "description": "Auto-switches between radio (<=3 options) and dropdown (>3 options)",
   "options": [
     { "code": "ACTIVE", "name": "Active" },
     { "code": "INACTIVE", "name": "Inactive" },
-    { "code": "PENDING", "name": "Pending" }
+    { "code": "PENDING", "name": "Pending" },
+    { "code": "ARCHIVED", "name": "Archived" }
   ]
 }
 ```
 
-**Behavior:**
-- 3 or fewer options → Radio buttons
-- More than 3 options → Dropdown
+### multiselectdropdown
 
----
+Dropdown allowing multiple selections. Maps to `MultiSelectDropdown` component.
 
-### 17. checkbox
+**Required properties:** `name`, `type`, `label`, `required`, and one of `options` or `mdms`
 
-**Description:** Boolean checkbox for yes/no values.
+**Optional properties:** `description`, `inline`, `key`
 
-**Configuration:**
-```json
-{
-  "name": "isActive",
-  "type": "checkbox",
-  "label": "Is Active",
-  "required": false
-}
-```
+**Generated config adds:**
+- `optionsKey: "name"` in populators
+- `allowMultiSelect: true` in populators
 
-**Value:** Returns `true` or `false`
-
----
-
-### 18. toggle
-
-**Description:** Toggle switch for on/off settings.
-
-**Configuration:**
-```json
-{
-  "name": "enableNotifications",
-  "type": "toggle",
-  "label": "Enable Notifications",
-  "required": false
-}
-```
-
-**Use Case:** Settings, preferences, feature flags
-
----
-
-### 19. multiselect / multiselectdropdown
-
-**Description:** Dropdown allowing multiple selections.
-
-**Configuration:**
 ```json
 {
   "name": "selectedTags",
   "type": "multiselectdropdown",
   "label": "Tags",
   "required": false,
+  "description": "Multi-select dropdown allowing multiple selections",
   "options": [
     { "code": "URGENT", "name": "Urgent" },
     { "code": "IMPORTANT", "name": "Important" },
-    { "code": "REVIEW", "name": "Needs Review" }
+    { "code": "REVIEW", "name": "Needs Review" },
+    { "code": "APPROVED", "name": "Approved" },
+    { "code": "FEATURED", "name": "Featured" }
   ]
 }
 ```
 
-**Value:** Returns array of selected codes
+---
+
+## Boolean Types
+
+### checkbox
+
+Boolean checkbox field. Defaults to `false`.
+
+**Required properties:** `name`, `type`, `label`, `required`
+
+**Optional properties:** `description`, `inline`, `key`
+
+**Generated config adds:**
+- `defaultValue: false` in populators
+
+```json
+{
+  "name": "isActive",
+  "type": "checkbox",
+  "label": "Is Active",
+  "required": false,
+  "description": "Checkbox for boolean values (yes/no)"
+}
+```
+
+### toggle
+
+On/off toggle switch. Defaults to `false`.
+
+**Required properties:** `name`, `type`, `label`, `required`
+
+**Optional properties:** `description`, `inline`, `key`
+
+**Generated config adds:**
+- `defaultValue: false` in populators
+
+```json
+{
+  "name": "enableNotifications",
+  "type": "toggle",
+  "label": "Enable Notifications",
+  "required": false,
+  "description": "Toggle switch for on/off settings"
+}
+```
 
 ---
 
-### 20. locationdropdown
+## Specialized Types
 
-**Description:** Hierarchical location selector (State > District > Ward).
+### mobileNumber
 
-**Configuration:**
+Phone number input with built-in 10-digit validation. If no `validation` block is provided in the config JSON, the generator automatically adds default min/max validation for Indian mobile numbers (10 digits).
+
+**Required properties:** `name`, `type`, `label`, `required`
+
+**Optional properties:** `description`, `validation`, `inline`, `key`
+
+**Default validation (auto-applied when no validation is specified):**
+```
+min: 1000000000
+max: 9999999999
+```
+
+```json
+{
+  "name": "mobileNumber",
+  "type": "mobileNumber",
+  "label": "Mobile Number",
+  "required": true,
+  "description": "Phone number with validation (10 digits)",
+  "validation": {
+    "min": 1000000000,
+    "max": 9999999999
+  }
+}
+```
+
+Note: If you provide your own `validation` block, the default is not applied. This prevents duplicate validation rules in the generated config.
+
+### locationdropdown
+
+Hierarchical boundary location picker. Renders a `LocationDropdown` component that supports the DIGIT boundary hierarchy (State > District > Ward).
+
+**Required properties:** `name`, `type`, `label`, `required`
+
+**Optional properties:** `description`, `locationtype`, `multiSelect`, `inline`, `key`
+
+**Generated config adds:**
+- `type: "ward"` in populators
+- `optionsKey: "i18nKey"` in populators
+- `defaultText: "COMMON_SELECT_WARD"` in populators
+- `selectedText: "COMMON_SELECTED"` in populators
+- `allowMultiSelect: false` in populators
+
 ```json
 {
   "name": "ward",
   "type": "locationdropdown",
   "label": "Ward/Location",
   "required": false,
+  "description": "Location dropdown with hierarchical selection (State > District > Ward)",
   "locationtype": "ward",
   "multiSelect": false
 }
 ```
 
-**Generated Config:**
-```javascript
-{
-  type: "locationdropdown",
-  populators: {
-    type: "ward",
-    optionsKey: "i18nKey",
-    defaultText: "COMMON_SELECT_WARD",
-    selectedText: "COMMON_SELECTED",
-    allowMultiSelect: false
-  }
-}
-```
+### apidropdown
 
-**Options:**
-- `locationtype`: "ward", "locality", "city", etc.
-- `multiSelect`: Allow multiple location selection
+Dropdown whose options are fetched from a REST API endpoint at runtime. Requires an `apiConfig` object.
 
----
+**Required properties:** `name`, `type`, `label`, `required`, `apiConfig`
 
-### 21. apidropdown
+**Optional properties:** `description`, `inline`, `key`
 
-**Description:** Dropdown populated from API endpoint.
+**apiConfig properties:**
 
-**Configuration:**
+| Property | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `url` | Yes | -- | API endpoint path (e.g., `/user/_search`) |
+| `params` | No | -- | Query parameters object |
+| `optionKey` | No | `"name"` | Property to display as the option label |
+| `optionValue` | No | `"code"` | Property to use as the option value |
+
+**Generated config adds:**
+- `optionsKey` from `apiConfig.optionKey` (defaults to `"name"`)
+- `allowMultiSelect: false` in populators
+- `url` from `apiConfig.url`
+- `optionValue` from `apiConfig.optionValue` (defaults to `"code"`)
+
 ```json
 {
   "name": "assignedUsers",
   "type": "apidropdown",
   "label": "Assigned Users",
   "required": false,
+  "description": "Dropdown populated from API endpoint",
   "apiConfig": {
     "url": "/user/_search",
     "params": { "tenantId": "default" },
@@ -517,100 +568,186 @@ This document provides a comprehensive reference for all supported field types i
 }
 ```
 
-**Use Case:** Dynamic data that changes frequently (users, vendors, etc.)
+### component
 
----
+Renders a custom React component. Use this when the built-in field types do not cover your use case. The `component` property must match the name of a registered React component.
 
-### 22. file
+**Required properties:** `name`, `type`, `label`, `required`, `component`, `key`
 
-**Description:** File upload field.
+**Optional properties:** `description`, `inline`
 
-**Configuration:**
+**Generated config adds:**
+- `component` in populators (the component name string)
+
 ```json
 {
-  "name": "attachments",
-  "type": "file",
-  "label": "Attachments",
-  "required": false
-}
-```
-
----
-
-### 23. component
-
-**Description:** Custom React component for complex data entry.
-
-**Configuration:**
-```json
-{
-  "name": "milestones",
+  "name": "customData",
   "type": "component",
-  "label": "Project Milestones",
+  "label": "Custom Data Component",
   "required": false,
-  "component": "ProjectMilestonesComponent",
-  "key": "milestones"
+  "description": "Custom React component for complex data entry",
+  "component": "CustomDataComponent",
+  "key": "customData"
 }
 ```
 
-**Use Case:** Complex UI that standard fields can't handle:
-- Dynamic arrays (add/remove items)
-- Nested objects
-- Custom validation logic
-- Special visualizations
+---
+
+## Validation Options
+
+All field types that accept validation use the same `validation` object structure. The properties available depend on the field type.
+
+| Property | Type | Applicable To | Description |
+|----------|------|---------------|-------------|
+| `pattern` | string (regex) | text, numeric, password, search, email, url | Regular expression pattern for input validation. Written without delimiters in JSON; the generator wraps it as `/pattern/i`. |
+| `minLength` | number (>= 0) | text, textarea, password, search, email, url | Minimum character length |
+| `maxLength` | number (>= 1) | text, textarea, password, search, email, url, geolocation | Maximum character length |
+| `min` | number | number, numeric, amount, mobileNumber | Minimum numeric value |
+| `max` | number | number, numeric, amount, mobileNumber | Maximum numeric value |
+| `step` | number (> 0) | amount | Decimal step precision (e.g., `0.01` for currency) |
+
+**Example with multiple validation rules:**
+
+```json
+{
+  "name": "demoId",
+  "type": "text",
+  "label": "Demo ID",
+  "required": true,
+  "validation": {
+    "pattern": "^DEMO[0-9]{6}$",
+    "maxLength": 10
+  }
+}
+```
+
+**Validation rules enforced by the config validator:**
+
+- `min` cannot be greater than `max`.
+- `minLength` cannot be greater than `maxLength`.
+- For `mobileNumber`, if no `validation` is provided, the generator auto-applies `min: 1000000000` and `max: 9999999999`.
+- For `email`, if no `pattern` is provided, the validator auto-applies `^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$`.
+- For `date` and `datetime`, do not use `minLength`/`maxLength` -- the validator will flag this as an error.
+- For `amount`, `validation.min` should be defined (validator warns if missing).
+
+---
+
+## Options Format
+
+Field types that present a list of choices (`dropdown`, `radio`, `radioordropdown`, `multiselectdropdown`) use the same options format.
+
+Each option is an object with two required properties:
+
+```json
+{
+  "code": "OPTION_CODE",
+  "name": "Display Label"
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `code` | string | Yes | Machine-readable value stored when selected |
+| `name` | string | Yes | Human-readable label displayed to the user |
+
+**Example options array:**
+
+```json
+"options": [
+  { "code": "ELECTRONICS", "name": "Electronics" },
+  { "code": "FURNITURE", "name": "Furniture" },
+  { "code": "CLOTHING", "name": "Clothing" }
+]
+```
+
+**Alternative: MDMS data source**
+
+Instead of static options, `dropdown`, `radioordropdown`, and `multiselectdropdown` can fetch options from DIGIT's Master Data Management Service (MDMS):
+
+```json
+"mdms": {
+  "masterName": "Department",
+  "moduleName": "common-masters",
+  "localePrefix": "COMMON_DEPARTMENT_"
+}
+```
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| `masterName` | Yes | MDMS master name |
+| `moduleName` | Yes | MDMS module name |
+| `localePrefix` | No | Prefix for i18n locale keys |
+
+When `mdms` is provided, the generated config includes an `mdmsConfig` block in the populators, and options are fetched at runtime from MDMS.
+
+**Validation note:** `dropdown`, `radio`, and `multiselect` fields must have either `options` or `mdms` defined. The config validator will reject the config if neither is present.
 
 ---
 
 ## Common Field Properties
 
-All field types support these common properties:
+Every field in the `fields` array shares these properties:
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `name` | string | Yes | Field identifier (camelCase) |
-| `type` | string | Yes | Field type from list above |
-| `label` | string | Yes | Display label |
-| `required` | boolean | Yes | Is field mandatory |
-| `description` | string | No | Help text/tooltip |
-| `searchable` | boolean | No | Include in search screen |
-| `filterable` | boolean | No | Include in filters |
-| `showInResults` | boolean | No | Show in search results table |
-| `showInView` | boolean | No | Show in view screen |
-| `showInInboxResults` | boolean | No | Show in inbox results |
-| `validation` | object | No | Validation rules |
-| `inline` | boolean | No | Display inline with previous field |
-| `key` | string | No | Custom key for form data |
+| `name` | string | Yes | Field identifier (camelCase, alphanumeric). Must match `^[a-zA-Z][a-zA-Z0-9]*$`. |
+| `type` | string | Yes | One of the supported field types listed in the overview table. |
+| `label` | string | Yes | Display label (also used for i18n key generation). |
+| `required` | boolean | Yes | Whether the field is mandatory in the form. |
+| `description` | string | No | Help text displayed below the field. Uses triple-stash `{{{description}}}` in templates for raw output. |
+| `key` | string | No | Custom key for the field in form data. Required for `component` type. |
+| `inline` | boolean | No | When `true`, the field renders inline (side-by-side layout). |
+| `searchable` | boolean | No | Makes the field available as a search filter in the search screen. |
+| `filterable` | boolean | No | Makes the field available as a filter in search/inbox screens. |
+| `showInResults` | boolean | No | Shows the field as a column in search results table. |
+| `showInView` | boolean | No | Shows the field in the detail view screen. |
+| `showInInboxResults` | boolean | No | Shows the field as a column in inbox results table. |
+| `inboxSearchable` | boolean | No | Makes the field searchable within the inbox screen. |
+| `validation` | object | No | Validation rules (see Validation Options section). |
+| `options` | array | No | Static options for selection types (see Options Format section). |
+| `mdms` | object | No | MDMS configuration for selection types. |
+| `apiConfig` | object | No | API configuration for `apidropdown` type. |
+| `component` | string | No | React component name for `component` type. |
+| `preProcess` | object | No | Pre-processing hooks applied before rendering. |
 
 ---
 
-## Validation Object Properties
+## Additional Sections
 
-| Property | Type | Applicable To | Description |
-|----------|------|---------------|-------------|
-| `pattern` | string | text, email, url | Regex pattern |
-| `minLength` | number | text, textarea, password | Minimum characters |
-| `maxLength` | number | text, textarea, password | Maximum characters |
-| `min` | number | number, amount, mobileNumber | Minimum value |
-| `max` | number | number, amount, mobileNumber | Maximum value |
-| `step` | number | number, amount | Increment step |
+Beyond the main `fields` array, you can define `additionalSections` in the config to create separate form sections with their own heading. Each section contains its own `body` array of fields:
+
+```json
+"additionalSections": [
+  {
+    "head": "SHOWCASE_ADDITIONAL_SECTION",
+    "subHead": "SHOWCASE_ADDITIONAL_SECTION_DESC",
+    "body": [
+      {
+        "name": "additionalNotes",
+        "type": "textarea",
+        "label": "Additional Notes",
+        "key": "additionalNotes",
+        "required": false,
+        "error": "SHOWCASE_ADDITIONAL_NOTES_ERROR",
+        "validation": {
+          "maxLength": 500
+        }
+      }
+    ]
+  }
+]
+```
+
+Fields in `additionalSections` require explicit `key` and `error` properties (the localization key for validation errors), whereas fields in the main `fields` array have these auto-generated by the template.
 
 ---
 
-## Example: Complete Field Showcase
+## Showcase Template
 
-See the `showcase` template for a working example of all field types:
+To generate a working example with all field types, use the showcase template:
 
 ```bash
 digit-gen create --template showcase
 ```
 
-This generates a module with all 22+ field types configured and ready for testing.
-
----
-
-## Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2026-02-02 | Initial field types reference |
-
+This generates a module named "Field Showcase" with every supported field type configured and ready for testing. The template is located at `templates/showcase/template.json`.

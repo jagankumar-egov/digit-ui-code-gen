@@ -1,45 +1,98 @@
+/**
+ * Module Generator - Main Orchestrator
+ *
+ * This is the core generator that produces a complete DIGIT micro-UI module
+ * from a JSON configuration. It coordinates all sub-generators to create:
+ *   - Base files (package.json, webpack.config.js, Module.js, README)
+ *   - Screen configs (create, search, inbox, view)
+ *   - Screen components (create, search, inbox, view, response, custom)
+ *   - Employee router with routes for each enabled screen
+ *   - Module card component for the home page
+ *   - Utils (createUtils, searchUtils, responseUtils, transformers, formatters, validators)
+ *   - API services and endpoint definitions
+ *   - Hooks index with CustomisedHooks export
+ *   - Localization files (en_IN, hi_IN)
+ *
+ * Supports partial generation via --only flag (e.g. --only screens,configs)
+ * and forced overwrite via --force flag.
+ */
+
 const fs = require('fs-extra');
 const path = require('path');
 const Handlebars = require('handlebars');
 const glob = require('glob');
 const chalk = require('chalk');
+
+// --- Sub-generator imports ---
+// Config generators: produce FormComposer/InboxSearchComposer config objects
 const { generateCreateConfig } = require('./configGenerators/createConfigGenerator');
 const { generateSearchConfig } = require('./configGenerators/searchConfigGenerator');
 const { generateInboxConfig } = require('./configGenerators/inboxConfigGenerator');
 const { generateViewConfig } = require('./configGenerators/viewConfigGenerator');
+
+// Utils generators: produce utility functions for form data handling
 const { generateCreateUtils } = require('./utilsGenerators/createUtilsGenerator');
 const { generateResponseUtils } = require('./utilsGenerators/responseUtilsGenerator');
 const { generateSearchUtils } = require('./utilsGenerators/searchUtilsGenerator');
+
+// Screen generator: compiles Handlebars (.hbs) templates into React components
 const { generateScreens } = require('./screenGenerators/screenGenerator');
+
+// Service generator: produces API service layer and endpoint definitions
 const { generateServices } = require('./serviceGenerators/serviceGenerator');
+
+// i18n generator: produces localization JSON files with auto-generated keys
 const { generateI18nFiles } = require('./i18nGenerator');
 
-// Register Handlebars helpers
+// ============================================================================
+// Handlebars Helpers
+// ============================================================================
+// These helpers are used in Handlebars templates (.hbs) and inline templates
+// for string case transformations and logical operations.
+// IMPORTANT: Handlebars is a singleton — helpers registered here are global.
+// Config generators run BEFORE screen generators, so if they register the
+// same helper name, the last registration wins.
+// ============================================================================
+
+// "employeeName" → "EmployeeName", "employee-name" → "EmployeeName"
 Handlebars.registerHelper('pascalCase', (str) => {
   return str.charAt(0).toUpperCase() + str.slice(1).replace(/[-_\s]+(.)?/g, (_, c) => c ? c.toUpperCase() : '');
 });
 
+// "EmployeeName" → "employeeName"
 Handlebars.registerHelper('camelCase', (str) => {
   const pascal = Handlebars.helpers.pascalCase(str);
   return pascal.charAt(0).toLowerCase() + pascal.slice(1);
 });
 
+// "EmployeeName" → "employee-name"
 Handlebars.registerHelper('kebabCase', (str) => {
   return str.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`).replace(/^-/, '');
 });
 
+// "employeeName" → "EMPLOYEE_NAME"
 Handlebars.registerHelper('constantCase', (str) => {
   return str.replace(/[A-Z]/g, letter => `_${letter}`).replace(/^_/, '').toUpperCase();
 });
 
+// Logical helpers for conditional blocks in templates
 Handlebars.registerHelper('eq', (a, b) => a === b);
 Handlebars.registerHelper('or', (a, b) => a || b);
 Handlebars.registerHelper('and', (a, b) => a && b);
+
+// Serialize arrays/objects to JSON strings in templates
 Handlebars.registerHelper('json', (context) => JSON.stringify(context || []));
 
+/**
+ * Convert a field name to a DIGIT localization key.
+ * Handles spaces, hyphens, and camelCase → CONSTANT_CASE.
+ * Example: "employeeName" with prefix "HR_" → "HR_EMPLOYEE_NAME"
+ *
+ * NOTE: This helper is also registered in 6 other files (screenGenerator,
+ * 4 config generators). All registrations MUST stay in sync.
+ */
 Handlebars.registerHelper('toLocalizationKey', function(fieldName, prefix) {
   const finalPrefix = prefix || 'MODULE_';
-  // Convert spaces/hyphens to underscores, then camelCase to CONSTANT_CASE
   const constantCase = fieldName
     .replace(/[\s-]+/g, '_')
     .replace(/([a-z])([A-Z])/g, '$1_$2')
@@ -47,9 +100,14 @@ Handlebars.registerHelper('toLocalizationKey', function(fieldName, prefix) {
   return `${finalPrefix}${constantCase}`;
 });
 
-async function generateFromConfig(config, outputPath, force = false) {
+async function generateFromConfig(config, outputPath, force = false, options = {}) {
   const moduleDir = path.join(outputPath, config.module.code);
   const result = { files: [], warnings: [] };
+
+  // --only flag: restrict which components to generate
+  // Valid values: base, configs, screens, utils, hooks, services, i18n, all (default)
+  const only = options.only ? options.only.split(',').map(s => s.trim().toLowerCase()) : [];
+  const shouldGenerate = (category) => only.length === 0 || only.includes(category);
 
   // Check if module already exists
   if (await fs.pathExists(moduleDir) && !force) {
@@ -59,46 +117,42 @@ async function generateFromConfig(config, outputPath, force = false) {
   // Create module directory structure
   await createDirectoryStructure(moduleDir);
 
-  // Generate package.json
-  await generatePackageJson(moduleDir, config, result);
-
-  // Generate webpack config
-  await generateWebpackConfig(moduleDir, config, result);
-
-  // Generate main Module.js
-  await generateMainModule(moduleDir, config, result);
-
-  // Generate configs for enabled screens
-  await generateConfigs(moduleDir, config, result);
-
-  // Generate UICustomizations config
-  await generateUICustomizations(moduleDir, config, result);
-
-  // Generate screen components
-  await generateScreenComponents(moduleDir, config, result);
-
-  // Generate employee router (pages/employee/index.js)
-  await generateEmployeeRouter(moduleDir, config, result);
-
-  // Generate module card (home page card component)
-  await generateModuleCard(moduleDir, config, result);
-
-  // Generate utility files
-  await generateUtilities(moduleDir, config, result);
-
-  // Generate service files
-  await generateServiceFiles(moduleDir, config, result);
-
-  // Generate hooks index (hooks/index.js with CustomisedHooks)
-  await generateHooksIndex(moduleDir, config, result);
-
-  // Generate i18n files
-  if (config.i18n?.generateKeys) {
-    await generateInternationalization(moduleDir, config, result);
+  if (shouldGenerate('base')) {
+    // Generate package.json
+    await generatePackageJson(moduleDir, config, result);
+    // Generate webpack config
+    await generateWebpackConfig(moduleDir, config, result);
+    // Generate main Module.js
+    await generateMainModule(moduleDir, config, result);
+    await generateReadme(moduleDir, config, result);
   }
 
-  // Generate README
-  await generateReadme(moduleDir, config, result);
+  if (shouldGenerate('configs')) {
+    await generateConfigs(moduleDir, config, result);
+    await generateUICustomizations(moduleDir, config, result);
+  }
+
+  if (shouldGenerate('screens')) {
+    await generateScreenComponents(moduleDir, config, result);
+    await generateEmployeeRouter(moduleDir, config, result);
+    await generateModuleCard(moduleDir, config, result);
+  }
+
+  if (shouldGenerate('utils')) {
+    await generateUtilities(moduleDir, config, result);
+  }
+
+  if (shouldGenerate('services')) {
+    await generateServiceFiles(moduleDir, config, result);
+  }
+
+  if (shouldGenerate('hooks')) {
+    await generateHooksIndex(moduleDir, config, result);
+  }
+
+  if (shouldGenerate('i18n') && config.i18n?.generateKeys) {
+    await generateInternationalization(moduleDir, config, result);
+  }
 
   return result;
 }
@@ -614,21 +668,318 @@ async function generateScreenComponents(moduleDir, config, result) {
 
 async function generateUtilities(moduleDir, config, result) {
   const utilsDir = path.join(moduleDir, 'src/utils');
-  
+
   // Generate createUtils.js
   const createUtilsContent = generateCreateUtils(config);
   await fs.writeFile(path.join(utilsDir, 'createUtils.js'), createUtilsContent);
   result.files.push('src/utils/createUtils.js');
-  
-  // Generate searchUtils.js  
+
+  // Generate searchUtils.js
   const searchUtilsContent = generateSearchUtils(config);
   await fs.writeFile(path.join(utilsDir, 'searchUtils.js'), searchUtilsContent);
   result.files.push('src/utils/searchUtils.js');
-  
+
   // Generate responseUtils.js
   const responseUtilsContent = generateResponseUtils(config);
   await fs.writeFile(path.join(utilsDir, 'responseUtils.js'), responseUtilsContent);
   result.files.push('src/utils/responseUtils.js');
+
+  // Generate transformers.js — API request/response transforms
+  await fs.writeFile(path.join(utilsDir, 'transformers.js'), generateTransformers(config));
+  result.files.push('src/utils/transformers.js');
+
+  // Generate formatters.js — date, number, currency formatters
+  await fs.writeFile(path.join(utilsDir, 'formatters.js'), generateFormatters(config));
+  result.files.push('src/utils/formatters.js');
+
+  // Generate validators.js — form validation rules
+  await fs.writeFile(path.join(utilsDir, 'validators.js'), generateValidators(config));
+  result.files.push('src/utils/validators.js');
+}
+
+function generateTransformers(config) {
+  const entity = config.entity.name;
+  const entityLower = entity.charAt(0).toLowerCase() + entity.slice(1);
+
+  return `/**
+ * API Data Transformers for ${entity}
+ * Handles request/response data transformations between form data and API format
+ */
+
+/**
+ * Transform form data into API create request payload
+ * @param {Object} formData - Raw form data from FormComposer
+ * @param {string} tenantId - Current tenant ID
+ * @param {Object} userInfo - Current user info (from Digit.UserService)
+ * @returns {Object} API-ready request body
+ */
+export const transformCreateData = (formData, tenantId, userInfo) => {
+  return {
+    ${entity}: {
+      ...formData,
+      tenantId,
+      auditDetails: {
+        createdBy: userInfo?.uuid,
+        createdTime: Date.now(),
+        lastModifiedBy: userInfo?.uuid,
+        lastModifiedTime: Date.now(),
+      },
+    },
+  };
+};
+
+/**
+ * Transform form data into API update request payload
+ * @param {Object} formData - Updated form data
+ * @param {Object} existingData - Existing entity data (from GET)
+ * @param {string} tenantId - Current tenant ID
+ * @param {Object} userInfo - Current user info
+ * @returns {Object} API-ready request body
+ */
+export const transformUpdateData = (formData, existingData, tenantId, userInfo) => {
+  return {
+    ${entity}: {
+      ...existingData,
+      ...formData,
+      tenantId,
+      auditDetails: {
+        ...existingData?.auditDetails,
+        lastModifiedBy: userInfo?.uuid,
+        lastModifiedTime: Date.now(),
+      },
+    },
+  };
+};
+
+/**
+ * Transform API search response into table-friendly format
+ * @param {Object} response - Raw API response
+ * @returns {Array} Array of ${entityLower} objects
+ */
+export const transformSearchResponse = (response) => {
+  return response?.${entity}s || response?.${entityLower}s || [];
+};
+
+/**
+ * Transform API view response into detail-friendly format
+ * @param {Object} response - Raw API response
+ * @returns {Object} Single ${entityLower} object
+ */
+export const transformViewResponse = (response) => {
+  const items = response?.${entity}s || response?.${entityLower}s || [];
+  return items[0] || {};
+};
+
+/**
+ * Transform form data for search API
+ * @param {Object} searchParams - Form search parameters
+ * @param {string} tenantId - Current tenant ID
+ * @returns {Object} Search criteria object
+ */
+export const transformSearchParams = (searchParams, tenantId) => {
+  const criteria = { tenantId };
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      criteria[key] = value;
+    }
+  });
+  return criteria;
+};
+`;
+}
+
+function generateFormatters(config) {
+  return `/**
+ * Formatters for ${config.entity.name}
+ * Date, number, and currency formatting utilities
+ */
+
+/**
+ * Format epoch timestamp to locale date string
+ * @param {number} epoch - Epoch time in milliseconds
+ * @param {string} format - 'date' | 'datetime' | 'time'
+ * @returns {string} Formatted date string
+ */
+export const formatDate = (epoch, format = 'date') => {
+  if (!epoch) return 'N/A';
+  const date = new Date(epoch);
+  switch (format) {
+    case 'datetime':
+      return date.toLocaleString('en-IN');
+    case 'time':
+      return date.toLocaleTimeString('en-IN');
+    case 'date':
+    default:
+      return date.toLocaleDateString('en-IN');
+  }
+};
+
+/**
+ * Format epoch to DD/MM/YYYY
+ * @param {number} epoch - Epoch time in milliseconds
+ * @returns {string} DD/MM/YYYY formatted date
+ */
+export const formatDateDMY = (epoch) => {
+  if (!epoch) return 'N/A';
+  const d = new Date(epoch);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return \`\${day}/\${month}/\${year}\`;
+};
+
+/**
+ * Format number with locale separators (Indian numbering)
+ * @param {number} num - Number to format
+ * @returns {string} Formatted number
+ */
+export const formatNumber = (num) => {
+  if (num === null || num === undefined) return 'N/A';
+  return Number(num).toLocaleString('en-IN');
+};
+
+/**
+ * Format amount as Indian currency (INR)
+ * @param {number} amount - Amount to format
+ * @returns {string} Formatted currency string
+ */
+export const formatCurrency = (amount) => {
+  if (amount === null || amount === undefined) return 'N/A';
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
+
+/**
+ * Truncate text with ellipsis
+ * @param {string} text - Text to truncate
+ * @param {number} maxLength - Max character length
+ * @returns {string} Truncated text
+ */
+export const truncateText = (text, maxLength = 50) => {
+  if (!text) return '';
+  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+};
+
+/**
+ * Format mobile number with country code
+ * @param {string} number - Mobile number
+ * @returns {string} Formatted number
+ */
+export const formatMobile = (number) => {
+  if (!number) return 'N/A';
+  return number.startsWith('+91') ? number : \`+91 \${number}\`;
+};
+`;
+}
+
+function generateValidators(config) {
+  const entity = config.entity.name;
+  const fields = config.screens?.create?.fields || [];
+
+  // Build field-specific validation rules from config
+  const fieldRules = fields
+    .filter(f => f.required || f.validation)
+    .map(f => {
+      const rules = [];
+      if (f.required) rules.push(`required: true`);
+      if (f.validation?.pattern) rules.push(`pattern: ${JSON.stringify(f.validation.pattern)}`);
+      if (f.validation?.minLength) rules.push(`minLength: ${f.validation.minLength}`);
+      if (f.validation?.maxLength) rules.push(`maxLength: ${f.validation.maxLength}`);
+      if (f.validation?.min) rules.push(`min: ${f.validation.min}`);
+      if (f.validation?.max) rules.push(`max: ${f.validation.max}`);
+      return `  ${f.name}: { ${rules.join(', ')} }`;
+    });
+
+  return `/**
+ * Form Validation Rules for ${entity}
+ * Used with FormComposer's validation system
+ */
+
+/**
+ * Validation rules derived from config
+ */
+export const validationRules = {
+${fieldRules.join(',\n') || '  // Add field validation rules here'}
+};
+
+/**
+ * Validate required fields
+ * @param {Object} formData - Form data to validate
+ * @param {Array} requiredFields - List of required field names
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+export const validateRequired = (formData, requiredFields = []) => {
+  const errors = [];
+  requiredFields.forEach(field => {
+    const value = formData[field];
+    if (value === undefined || value === null || value === '') {
+      errors.push(\`\${field} is required\`);
+    }
+  });
+  return { valid: errors.length === 0, errors };
+};
+
+/**
+ * Validate mobile number format (Indian 10-digit)
+ * @param {string} number - Mobile number to validate
+ * @returns {boolean}
+ */
+export const isValidMobile = (number) => {
+  if (!number) return false;
+  const cleaned = number.replace(/[\\s-+]/g, '');
+  return /^(91)?[6-9]\\d{9}$/.test(cleaned);
+};
+
+/**
+ * Validate email format
+ * @param {string} email - Email to validate
+ * @returns {boolean}
+ */
+export const isValidEmail = (email) => {
+  if (!email) return false;
+  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+};
+
+/**
+ * Validate that a date is not in the future
+ * @param {string|number} date - Date string or epoch
+ * @returns {boolean}
+ */
+export const isNotFutureDate = (date) => {
+  if (!date) return true;
+  const d = typeof date === 'number' ? new Date(date) : new Date(date);
+  return d <= new Date();
+};
+
+/**
+ * Validate field value against its config rules
+ * @param {string} fieldName - Field name
+ * @param {*} value - Field value
+ * @returns {{ valid: boolean, error: string|null }}
+ */
+export const validateField = (fieldName, value) => {
+  const rules = validationRules[fieldName];
+  if (!rules) return { valid: true, error: null };
+
+  if (rules.required && (value === undefined || value === null || value === '')) {
+    return { valid: false, error: \`\${fieldName} is required\` };
+  }
+  if (rules.minLength && value && value.length < rules.minLength) {
+    return { valid: false, error: \`\${fieldName} must be at least \${rules.minLength} characters\` };
+  }
+  if (rules.maxLength && value && value.length > rules.maxLength) {
+    return { valid: false, error: \`\${fieldName} must be at most \${rules.maxLength} characters\` };
+  }
+  if (rules.pattern && value && !new RegExp(rules.pattern).test(value)) {
+    return { valid: false, error: \`\${fieldName} format is invalid\` };
+  }
+
+  return { valid: true, error: null };
+};
+`;
 }
 
 async function generateServiceFiles(moduleDir, config, result) {
