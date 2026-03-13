@@ -46,6 +46,10 @@ async function validateConfig(options) {
     let config;
     try {
       config = await fs.readJson(configPath);
+      // Unwrap if config is nested under a "config" key (template.json format)
+      if (config.config) {
+        config = config.config;
+      }
       console.log(chalk.green(`✅ Configuration file loaded successfully`));
     } catch (error) {
       console.log(chalk.red(`❌ Invalid JSON in configuration file: ${error.message}`));

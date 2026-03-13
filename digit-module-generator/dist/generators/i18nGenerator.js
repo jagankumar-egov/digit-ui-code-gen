@@ -1,11 +1,32 @@
+/**
+ * i18nGenerator.js — Localization file generator
+ *
+ * Generates localization JSON files (en_IN.json, hi_IN.json) in the module's
+ * localization/ directory. Called by moduleGenerator when config.i18n.generateKeys is true.
+ *
+ * Key generation strategy:
+ *   - Every field name is converted to SCREAMING_SNAKE_CASE and prefixed with i18n.prefix
+ *     e.g. "employeeName" + prefix "HRMS_" → "HRMS_EMPLOYEE_NAME"
+ *   - Three variants are generated per field: _LABEL, _ERROR, _PLACEHOLDER
+ *   - Screen-level keys are generated for headers, buttons, breadcrumbs
+ *   - Module-level keys: MODULE_NAME, MODULE_DESCRIPTION
+ *
+ * English values are pre-filled from field labels (human-readable defaults).
+ * Hindi values fall back to the English string when no translation is available
+ * — developers replace them with actual translations.
+ *
+ * The output format matches DIGIT's expected locale JSON structure:
+ *   { "HRMS_EMPLOYEE_NAME_LABEL": "Employee Name", ... }
+ */
 const fs = require('fs-extra');
 const path = require('path');
 
 /**
- * Generate internationalization files for module
- * @param {Object} config - Module configuration
- * @param {string} outputDir - Output directory path
- * @param {Array} languages - Array of language codes (e.g., ['en_IN', 'hi_IN'])
+ * Generates localization JSON files for the specified languages.
+ *
+ * @param {Object} config      - Validated module config
+ * @param {string} outputDir   - Module root directory (localization/ subfolder is created here)
+ * @param {Array}  languages   - Language codes to generate, e.g. ['en_IN', 'hi_IN']
  */
 async function generateI18nFiles(config, outputDir, languages = ['en_IN']) {
   console.log('🌐 Generating internationalization files...');

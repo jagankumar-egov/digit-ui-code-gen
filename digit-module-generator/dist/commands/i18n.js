@@ -1,7 +1,43 @@
+/**
+ * i18n command — `digit-gen i18n`
+ *
+ * Standalone internationalization file generator.
+ * Produces one JSON translation file per requested language plus a
+ * config.js that registers them with react-i18next.
+ *
+ * Generated key categories (all prefixed with config.i18n.prefix):
+ *   MODULE_NAME / MODULE_DESCRIPTION
+ *   <SCREEN>_HEADING / <SCREEN>_DESCRIPTION / <SCREEN>_SUBMIT / etc.
+ *   <FIELD_NAME> / <FIELD_NAME>_REQUIRED / <FIELD_NAME>_INVALID_FORMAT
+ *   <FIELD_NAME>_<OPTION_CODE>   (for dropdown static options)
+ *   CREATED_SUCCESSFULLY / CREATION_FAILED / WORKFLOW_* / ...
+ *
+ * Language support:
+ *   en_IN  — labels returned as-is from the config
+ *   hi_IN  — common terms translated via a built-in lookup table;
+ *             untranslated terms fall back to the English label
+ *   other  — treated the same as en_IN (passthrough)
+ *
+ * Output:
+ *   <output>/localization/<lang>.json   — one file per language
+ *   <output>/localization/config.js     — lazy-import resource map + helper
+ *
+ * Usage:
+ *   digit-gen i18n --config module-config.json --languages en_IN,hi_IN
+ */
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
 const ora = require('ora');
+
+/**
+ * Entry point for `digit-gen i18n`.
+ *
+ * @param {Object} options
+ * @param {string} options.config     - Path to the module config JSON
+ * @param {string} options.languages  - Comma-separated locale codes (e.g. "en_IN,hi_IN")
+ * @param {string} [options.output]   - Output directory (default: ./generated)
+ */
 async function generateI18n(options) {
   try {
     console.log(chalk.blue('\n🌐 Generating internationalization files...\n'));

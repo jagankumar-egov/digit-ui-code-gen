@@ -1,7 +1,38 @@
+/**
+ * migrate command — `digit-gen migrate`
+ *
+ * Migrates an existing DIGIT module to a newer pattern or dependency version.
+ * Operates on a previously generated (or hand-written) module directory.
+ *
+ * Migration steps (determined by analyzeModule()):
+ *   1. add-tests      — scaffolds __tests__/setup.js + jest.config.js if absent
+ *   2. add-webpack    — adds webpack.config.js if absent
+ *   3. migrate-framework — rewrites @egovernments/digit-ui-react-components
+ *                          imports to @egovernments/digit-ui-components
+ *   4. update-configs — rewrites deprecated config patterns in src/configs/
+ *   5. update-package — bumps peer dep versions in package.json
+ *
+ * Safety options:
+ *   --backup          Copies the module to a sibling _backup_<timestamp>/ dir
+ *                     before any changes are made (skips node_modules/dist/.git)
+ *   --version <x.y.z> Sets the target semver; defaults to auto-incrementing patch
+ *
+ * Usage:
+ *   digit-gen migrate --module ./path/to/module [--backup] [--version 2.0.0]
+ */
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
 const ora = require('ora');
+
+/**
+ * Entry point for `digit-gen migrate`.
+ *
+ * @param {Object} options
+ * @param {string} options.module    - Path to the module directory to migrate
+ * @param {boolean} [options.backup] - Whether to create a backup before migrating
+ * @param {string} [options.version] - Target version string (default: auto-increment patch)
+ */
 async function migrateModule(options) {
   try {
     console.log(chalk.blue('\n🔄 Starting module migration...\n'));

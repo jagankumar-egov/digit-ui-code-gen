@@ -1,3 +1,30 @@
+/**
+ * create.js — `digit-gen create` command implementation
+ *
+ * Entry point for generating a complete DIGIT micro-UI module.
+ *
+ * Three input modes (combinable):
+ *   --template <name>   Pre-built template (hrms, inventory, project-mgmt, showcase)
+ *   --config <file>     Custom JSON config file
+ *   --api-spec <file>   OpenAPI/Swagger spec — fields and API endpoints are derived automatically
+ *
+ * Flow:
+ *   1. Load config (template / JSON file / API spec, or interactive prompt)
+ *   2. Merge inputs — api-spec fields are merged into template/config base
+ *   3. Validate with AJV + business logic (configValidator)
+ *   4. Optionally show --dry-run preview
+ *   5. Call generateFromConfig (moduleGenerator orchestrator)
+ *   6. Prompt user: "Integrate with micro-ui/web?" → webAppIntegrator
+ *
+ * Key flags:
+ *   --force    Overwrite existing module. When output is inside micro-ui/web and
+ *              --only is NOT set, deintegrates the module first to clear stale entries,
+ *              then re-integrates after generation.
+ *   --only     Partial generation (e.g. --only screens,configs). Skips deintegration
+ *              since the host-app registration is still valid.
+ *   --dry-run  Print what would be generated without writing any files.
+ *   --output   Custom output directory (default: ./micro-ui/web/packages/modules/)
+ */
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const ora = require('ora');
@@ -20,6 +47,21 @@ const {
   deintegrateFromWebApp,
   isIntegrated
 } = require('../integrators/webAppIntegrator');
+
+/**
+ * Main handler for the `digit-gen create` command.
+ * Orchestrates config loading, validation, generation, and optional web-app integration.
+ *
+ * @param {Object} options - Commander.js parsed options
+ * @param {string} [options.config]    - Path to JSON config file
+ * @param {string} [options.template]  - Template name to use as base
+ * @param {string} [options.apiSpec]   - Path to OpenAPI spec file or URL
+ * @param {string} [options.entity]    - Entity name (required for api-spec mode)
+ * @param {string} [options.output]    - Output directory path
+ * @param {boolean} [options.force]    - Overwrite existing module
+ * @param {string} [options.only]      - Comma-separated categories to regenerate
+ * @param {boolean} [options.dryRun]   - Preview only, no files written
+ */
 async function createModule(options) {
   try {
     console.log(chalk.blue('\n🚀 Starting module generation...\n'));
