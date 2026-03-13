@@ -7,12 +7,12 @@
   "config": {
     "module": {
       "name": "Employee Management",
-      "code": "employee-mgmt",
+      "code": "hrms",
       "description": "Comprehensive employee management system",
       "version": "1.0.0"
     },
     "entity": {
-      "name": "Employee",
+      "name": "HRMS",
       "apiPath": "/employee-service/v1",
       "primaryKey": "employeeId",
       "displayField": "employeeName"
@@ -20,24 +20,24 @@
     "screens": {
       "create": {
         "enabled": true,
-        "roles": ["EMPLOYEE_ADMIN", "HR_MANAGER"],
+        "roles": ["EMPLOYEE_ADMIN", "HR_MANAGER","HRMS_ADMIN"],
         "workflow": true
       },
       "search": {
         "enabled": true,
-        "roles": ["EMPLOYEE_ADMIN", "EMPLOYEE_VIEWER", "HR_MANAGER", "HR_VIEWER"],
+        "roles": ["EMPLOYEE_ADMIN", "EMPLOYEE_VIEWER", "HR_MANAGER", "HR_VIEWER","HRMS_ADMIN"],
         "filters": ["department", "designation", "status", "joiningDateRange"],
         "minSearchFields": 1,
         "showFooter": true
       },
       "inbox": {
         "enabled": true,
-        "roles": ["EMPLOYEE_ADMIN", "HR_MANAGER"],
+        "roles": ["EMPLOYEE_ADMIN", "HR_MANAGER","HRMS_ADMIN"],
         "businessService": "employee-onboarding"
       },
       "view": {
         "enabled": true,
-        "roles": ["EMPLOYEE_ADMIN", "EMPLOYEE_VIEWER", "HR_MANAGER", "HR_VIEWER"],
+        "roles": ["EMPLOYEE_ADMIN", "EMPLOYEE_VIEWER", "HR_MANAGER", "HR_VIEWER","HRMS_ADMIN"],
         "sections": ["basic", "contact", "employment", "documents", "workflow"]
       },
       "response": {
@@ -264,7 +264,7 @@
     },
     "auth": {
       "required": true,
-      "roles": ["EMPLOYEE_ADMIN", "EMPLOYEE_VIEWER", "HR_MANAGER", "HR_VIEWER"]
+      "roles": ["EMPLOYEE_ADMIN", "EMPLOYEE_VIEWER", "HR_MANAGER", "HR_VIEWER","HRMS_ADMIN"]
     },
     "workflow": {
       "enabled": true,

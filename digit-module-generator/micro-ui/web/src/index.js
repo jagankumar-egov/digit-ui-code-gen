@@ -10,7 +10,7 @@ window.Digit.Hooks = Hooks;
 const DigitUILazy = lazy(() => import("@egovernments/digit-ui-module-core").then((module) => ({ default: module.DigitUI })));
 
 
-const enabledModules = ["Utilities", "Sample","HRMS","FieldShowcase"];
+const enabledModules = ["Utilities", "Sample","HRMS"];
 
 const initTokens = (stateCode) => {
   const userType = window.sessionStorage.getItem("userType") || process.env.REACT_APP_USER_TYPE || "CITIZEN";
@@ -66,10 +66,10 @@ const MainApp = ({ stateCode, enabledModules }) => {
         // Continue without modules if they fail to load
       }
       try {
-        const { initDemoComponents } = await import("@egovernments/digit-ui-module-field-showcase")
-        initDemoComponents();
+        const { initHRMSComponents } = await import("@egovernments/digit-ui-module-hrms")
+        initHRMSComponents();
       } catch (error) {
-        console.log("Error loading FieldShowcase module:", error);
+        console.log("Error loading Hrms module:", error);
       }
 
       setIsReady(true);
