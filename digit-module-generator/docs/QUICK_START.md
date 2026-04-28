@@ -10,7 +10,7 @@
 **Global install (recommended):**
 
 ```bash
-npm install -g @egovernments/digit-module-generator
+npm install -g @egovernments/digit-module-generator@1.0.3
 ```
 
 **Local development:**

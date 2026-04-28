@@ -18,7 +18,7 @@ A CLI library to automatically generate DIGIT micro-ui modules based on template
 
 ### Global Installation (Recommended)
 ```bash
-npm install -g @egovernments/digit-module-generator
+npm install -g @egovernments/digit-module-generator@1.0.3
 ```
 
 ### Using npx (No Installation Required)

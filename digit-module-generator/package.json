@@ -1,6 +1,6 @@
 {
   "name": "@egovernments/digit-module-generator",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Official CLI library to generate DIGIT micro-ui modules with modern patterns and API specifications",
   "main": "dist/index.js",
   "bin": {

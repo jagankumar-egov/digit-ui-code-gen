@@ -40,7 +40,7 @@ console.log(
 program
   .name('digit-gen')
   .description('CLI to generate DIGIT micro-ui modules')
-  .version('1.0.0');
+  .version('1.0.3');
 
 // Create command
 program
