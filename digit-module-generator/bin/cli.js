@@ -52,10 +52,11 @@ program
   .option('-a, --api-spec <path>', 'API specification file/URL')
   .option('-t, --template <template>', 'use existing template')
   .option('-s, --screens <screens>', 'comma-separated screen list')
-  .option('-o, --output <path>', 'output directory', './packages/modules')
+  .option('-o, --output <path>', 'output directory', './micro-ui/web/packages/modules')
   .option('--config <config>', 'configuration file')
   .option('--force', 'overwrite existing files')
   .option('--dry-run', 'preview generated files without creating them')
+  .option('--only <components>', 'generate only specific components (base,configs,screens,utils,hooks,services,i18n)')
   .action(createModule);
 
 // Templates command
@@ -76,8 +77,9 @@ program
 // Screen command
 program
   .command('screen <type>')
-  .description('Generate specific screen type')
+  .description('Generate specific screen type (create, search, inbox, view, response, custom)')
   .requiredOption('-e, --entity <entity>', 'entity name')
+  .option('-n, --name <name>', 'custom screen name (for custom type)')
   .option('--config <config>', 'configuration file')
   .option('-o, --output <path>', 'output directory')
   .action(generateScreen);

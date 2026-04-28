@@ -1,4 +1,35 @@
+/**
+ * Response Utils Generator
+ *
+ * Generates src/utils/responseUtils.js for the module.
+ * This file provides helpers used by the response/acknowledgement screen
+ * shown after a successful create/update or workflow action.
+ *
+ * Generated functions:
+ *   navigateToResponse     - navigates to the response screen using React Router,
+ *                            passing success/failure state via location.state.
+ *                            Uses window.contextPath for DIGIT's dynamic base path.
+ *   extractEntityInfo      - extracts id, primaryKey, displayField, status, submittedDate
+ *                            from a raw API response object
+ *   formatSuccessResponse  - wraps entity info + localization key into a success response object
+ *   formatErrorResponse    - wraps error message + localization key into a failure response object
+ *   formatWorkflowResponse - (only if workflow.enabled) wraps ProcessInstances data
+ *                            from the workflow API response into a display-friendly object
+ *   handleApiError         - logs error, shows Digit toast, optionally navigates to response
+ *   handleApiSuccess       - logs success, shows Digit toast, optionally navigates to response
+ *   makeApiCall            - generic async wrapper: calls apiFunction(), routes to success/error handler
+ *
+ * Template is compiled at generation time using Handlebars.
+ */
 const Handlebars = require('handlebars');
+
+/**
+ * Generates the content of src/utils/responseUtils.js.
+ * Workflow functions are conditionally included based on config.workflow.enabled.
+ *
+ * @param {Object} config - Validated module config
+ * @returns {string} JavaScript source code as a string
+ */
 function generateResponseUtils(config) {
   const template = `/**
  * Navigate to response screen with state data

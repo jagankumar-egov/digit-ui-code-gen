@@ -1,3 +1,23 @@
+/**
+ * utils command — `digit-gen utils`
+ *
+ * Standalone utility-file generator. Produces the three util files
+ * (createUtils.js, responseUtils.js, searchUtils.js) plus a barrel
+ * index.js without running a full module generation.
+ *
+ * Input modes:
+ *   --config <path>   Full module config JSON (preferred — uses all field types)
+ *   --entity <name>   No config file; builds a minimal 3-field scaffold instead
+ *
+ * Output:
+ *   <output>/utils/createUtils.js   — transform/validate form → API payload
+ *   <output>/utils/responseUtils.js — navigate-to-response, format success/error
+ *   <output>/utils/searchUtils.js   — transform/format/validate search params
+ *   <output>/utils/index.js         — barrel re-export of all three
+ *
+ * Typical use: regenerate just the util layer after changing field definitions
+ * without re-running the entire `digit-gen create` flow.
+ */
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
@@ -11,6 +31,15 @@ const {
 const {
   generateSearchUtils
 } = require('../generators/utilsGenerators/searchUtilsGenerator');
+
+/**
+ * Entry point for `digit-gen utils`.
+ *
+ * @param {Object} options
+ * @param {string} [options.config]  - Path to module config JSON
+ * @param {string} [options.entity]  - Entity name (used when no config file provided)
+ * @param {string} [options.output]  - Output directory (default: ./generated)
+ */
 async function generateUtils(options) {
   try {
     console.log(chalk.blue('\n⚙️  Generating utility files...\n'));

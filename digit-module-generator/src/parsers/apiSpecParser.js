@@ -1,9 +1,41 @@
+/**
+ * apiSpecParser.js — OpenAPI/Swagger spec parser
+ *
+ * Converts an OpenAPI 2.x/3.x spec into a partial DIGIT module config,
+ * allowing `digit-gen create --api-spec api.yaml --entity Employee` to
+ * derive field definitions and API endpoints automatically.
+ *
+ * Process:
+ *   1. Load spec (local file or HTTP URL)
+ *   2. Dereference all $ref pointers (SwaggerParser handles circular refs)
+ *   3. Find the schema definition for the requested entity name
+ *   4. Map OpenAPI property types → DIGIT field types:
+ *        string              → text
+ *        integer/number      → number
+ *        boolean             → toggle
+ *        string + enum       → dropdown (options derived from enum values)
+ *        string + format=date → date
+ *        string + format=email → email
+ *        string + format=password → password
+ *   5. Extract API endpoint paths from spec paths matching the entity name
+ *   6. Return a partial config object that is merged with --template or --config base
+ *
+ * Circular reference guard: a WeakSet tracks visited schema objects during
+ * recursive $ref resolution to avoid infinite loops.
+ */
 const fs = require('fs-extra');
 const axios = require('axios');
 const yaml = require('yaml');
 const SwaggerParser = require('swagger-parser');
 const chalk = require('chalk');
 
+/**
+ * Parses an OpenAPI spec and returns a partial DIGIT module config.
+ *
+ * @param {string} specPath   - File path or URL to the OpenAPI spec
+ * @param {string} entityName - PascalCase entity name to extract (e.g. "Employee")
+ * @returns {Object} Partial config with fields and api sections populated
+ */
 async function parseApiSpec(specPath, entityName) {
   try {
     console.log(chalk.blue(`📄 Loading API specification from: ${specPath}`));
@@ -44,6 +76,8 @@ async function parseApiSpec(specPath, entityName) {
 }
 
 function findEntitySchema(api, entityName) {
+  if (!entityName) return null;
+
   // Look in components/schemas first (OpenAPI 3.x)
   if (api.components?.schemas?.[entityName]) {
     return api.components.schemas[entityName];
@@ -99,13 +133,12 @@ function generateConfigFromSchema(api, schema, entityName) {
   };
 }
 
-function extractFields(schema, api, visited = new Set()) {
+function extractFields(schema, api, visited = new WeakSet()) {
   if (!schema || !schema.properties) return [];
-  
-  // Prevent infinite recursion
-  const schemaId = schema.$ref || JSON.stringify(schema);
-  if (visited.has(schemaId)) return [];
-  visited.add(schemaId);
+
+  // Prevent infinite recursion with WeakSet (handles circular refs safely)
+  if (visited.has(schema)) return [];
+  visited.add(schema);
   
   const fields = [];
   
@@ -237,9 +270,12 @@ function extractFieldValidation(spec) {
 }
 
 function extractApiEndpoints(api, entityName) {
-  const endpoints = {
-    basePath: api.servers?.[0]?.url || api.basePath || '/api/v1'
-  };
+  let rawBase = api.servers?.[0]?.url || api.basePath || '/api/v1';
+  // If it's a full URL (e.g. SwaggerHub mock), extract just the path
+  if (rawBase.startsWith('http')) {
+    try { rawBase = new URL(rawBase).pathname; } catch (e) { rawBase = '/api/v1'; }
+  }
+  const endpoints = { basePath: rawBase || '/api/v1' };
   
   // Find paths that match entity operations
   const entityPath = findEntityPath(api.paths, entityName);
@@ -333,12 +369,13 @@ function extractValidations(schema) {
 }
 
 function getDefaultConfig(entityName) {
+  const safeName = entityName || 'Entity';
   return {
     entity: {
-      name: entityName,
+      name: safeName,
       apiPath: '/api/v1',
-      primaryKey: `${entityName.toLowerCase()}Id`,
-      displayField: `${entityName.toLowerCase()}Name`
+      primaryKey: `${safeName.toLowerCase()}Id`,
+      displayField: `${safeName.toLowerCase()}Name`
     },
     fields: [
       {

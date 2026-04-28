@@ -1,5 +1,37 @@
+/**
+ * Search Utils Generator
+ *
+ * Generates src/utils/searchUtils.js for the module.
+ * This file provides all utilities needed by the search screen.
+ *
+ * Generated functions:
+ *   transformSearchParams  - converts form filter values → API search criteria body
+ *                            strips null/empty values before sending
+ *                            date fields are split into {name}From / {name}To (epoch)
+ *                            dropdown fields extract .code from MDMS object
+ *   formatSearchResults    - shapes raw API list response → table-friendly row array
+ *                            adds viewPath and editPath for row action links
+ *   buildSearchQuery       - serializes current search state into URL query params
+ *                            used to persist search across page navigation
+ *   parseSearchQuery       - deserializes URL query params back into form state
+ *   validateSearchParams   - validates form state before API call
+ *                            enforces minSearchFields if configured
+ *   getDefaultSearchParams - returns initial/reset state for the search form
+ *   resetSearchParams      - convenience wrapper for resetting form state
+ *   searchConfig           - static config object (default params, searchable/result fields)
+ *
+ * Template is compiled at generation time using Handlebars.
+ */
 const Handlebars = require('handlebars');
 
+/**
+ * Generates the content of src/utils/searchUtils.js.
+ * Iterates over config.fields to emit field-specific handling for
+ * searchable fields only (those with searchable: true in config).
+ *
+ * @param {Object} config - Validated module config
+ * @returns {string} JavaScript source code as a string
+ */
 function generateSearchUtils(config) {
   const template = `/**
  * Transform search form data to API search criteria

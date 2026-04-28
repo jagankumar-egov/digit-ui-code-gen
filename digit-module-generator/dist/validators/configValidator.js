@@ -1,7 +1,29 @@
+/**
+ * configValidator.js — Module config validation
+ *
+ * Validates a DIGIT module config in two passes before generation begins:
+ *
+ *   Pass 1 — AJV Schema Validation
+ *     Enforces structure: required fields, types, string patterns, and enums.
+ *     Key constraints:
+ *       - module.code must be kebab-case (^[a-z0-9-]+$)
+ *       - entity.name must be PascalCase (^[A-Z][a-zA-Z0-9]+$)
+ *       - i18n.prefix must end with '_'
+ *       - field.type must be one of the 22 supported field types
+ *
+ *   Pass 2 — Business Logic Validation
+ *     Catches interdependencies that JSON Schema cannot express:
+ *       - inbox screen requires workflow.enabled to be true
+ *       - apidropdown fields require an apiConfig.url
+ *       - duplicate field names within a screen
+ *       - auth.roles must be non-empty if any screen uses role-based access
+ *
+ * Both passes accumulate ALL errors before returning so the user sees everything at once.
+ */
 const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
 
-// Create AJV instance with formats support
+// allErrors: true — collect ALL schema violations instead of stopping at the first one
 const ajv = new Ajv({
   allErrors: true
 });
@@ -77,6 +99,12 @@ const moduleConfigSchema = {
         },
         response: {
           $ref: '#/definitions/screenConfig'
+        },
+        custom: {
+          $ref: '#/definitions/screenConfig'
+        },
+        landing: {
+          $ref: '#/definitions/screenConfig'
         }
       },
       additionalProperties: false,
@@ -110,7 +138,7 @@ const moduleConfigSchema = {
         },
         workflow: {
           type: 'string',
-          pattern: '^/.*'
+          pattern: '^(/.*|)$'
         }
       },
       additionalProperties: true
@@ -126,8 +154,7 @@ const moduleConfigSchema = {
           items: {
             type: 'string',
             minLength: 1
-          },
-          minItems: 1
+          }
         }
       },
       required: ['required'],
@@ -140,8 +167,7 @@ const moduleConfigSchema = {
           type: 'boolean'
         },
         businessService: {
-          type: 'string',
-          minLength: 1
+          type: 'string'
         }
       },
       required: ['enabled'],
@@ -191,7 +217,7 @@ const moduleConfigSchema = {
         },
         type: {
           type: 'string',
-          enum: ['text', 'number', 'date', 'datetime', 'email', 'url', 'password', 'textarea', 'dropdown', 'radio', 'checkbox', 'multiselect', 'radioordropdown', 'mobileNumber', 'amount', 'locationdropdown', 'apidropdown', 'file', 'component']
+          enum: ['text', 'number', 'date', 'datetime', 'time', 'email', 'url', 'password', 'textarea', 'dropdown', 'radio', 'checkbox', 'toggle', 'multiselect', 'multiselectdropdown', 'radioordropdown', 'mobileNumber', 'amount', 'locationdropdown', 'apidropdown', 'file', 'component', 'search', 'geolocation', 'numeric']
         },
         label: {
           type: 'string',
@@ -393,7 +419,11 @@ function validateBusinessLogic(config) {
   // Validate API paths
   if (config.api) {
     Object.entries(config.api).forEach(([operation, path]) => {
-      if (typeof path === 'string' && !path.startsWith('/')) {
+      // Skip empty workflow paths when workflow is disabled
+      if (operation === 'workflow' && (!path || path === '')) {
+        return;
+      }
+      if (typeof path === 'string' && path !== '' && !path.startsWith('/')) {
         errors.push(`api.${operation}: API paths must start with '/'`);
       }
     });

@@ -1,0 +1,89 @@
+import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { Card, Header, Loader, Button, InfoCard } from "@egovernments/digit-ui-components";
+
+const {{pascalCase config.entity.name}}Custom = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const tenantId = Digit.ULBService.getCurrentTenantId();
+  const user = Digit.UserService.getUser()?.info;
+  const moduleCode = "{{kebabCase config.module.code}}";
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
+  {{#if config.api.search}}
+  // Optional: Fetch data from API
+  const reqCriteria = {
+    url: "{{config.api.search}}",
+    params: {
+      tenantId: tenantId,
+      limit: 10,
+      offset: 0,
+    },
+    body: {
+      {{config.entity.name}}SearchCriteria: {
+        tenantId,
+      },
+    },
+    config: {
+      enabled: false, // Set to true to enable API call
+      select: (response) => {
+        return response?.{{config.entity.name}}s || [];
+      },
+    },
+  };
+
+  // Uncomment below to enable API data fetching
+  // const { isLoading: apiLoading, data: apiData, error: apiError } = Digit.Hooks.useCustomAPIHook(reqCriteria);
+  {{/if}}
+
+  return (
+    <div className="{{kebabCase config.entity.name}}-custom-container">
+      <Header>{t("{{toLocalizationKey config.entity.name config.i18n.prefix}}_CUSTOM_SCREEN")}</Header>
+
+      <Card type="primary" className="{{kebabCase config.entity.name}}-custom-card">
+        {isLoading ? (
+          <Loader />
+        ) : error ? (
+          <InfoCard
+            variant="error"
+            text={t("{{toLocalizationKey 'ERROR_LOADING' config.i18n.prefix}}")}
+          />
+        ) : (
+          <div className="{{kebabCase config.entity.name}}-custom-content">
+            {/* Add your custom content here */}
+            <InfoCard
+              variant="default"
+              text={t("{{toLocalizationKey 'CUSTOM_SCREEN_INFO' config.i18n.prefix}}")}
+            />
+
+            {/* Action buttons */}
+            <div className="{{kebabCase config.entity.name}}-custom-actions" style=\{{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
+              {{#if config.screens.create.enabled}}
+              <Button
+                type="button"
+                variation="primary"
+                label={t("{{toLocalizationKey 'CREATE_NEW' config.i18n.prefix}}")}
+                onClick={() => navigate(`/employee/${moduleCode}/create`)}
+              />
+              {{/if}}
+              {{#if config.screens.search.enabled}}
+              <Button
+                type="button"
+                variation="secondary"
+                label={t("{{toLocalizationKey 'GO_TO_SEARCH' config.i18n.prefix}}")}
+                onClick={() => navigate(`/employee/${moduleCode}/search`)}
+              />
+              {{/if}}
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+};
+
+export default {{pascalCase config.entity.name}}Custom;

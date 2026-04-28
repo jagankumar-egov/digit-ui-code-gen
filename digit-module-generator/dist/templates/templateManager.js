@@ -1,8 +1,34 @@
+/**
+ * templateManager.js — Pre-built template management
+ *
+ * Manages the 4 pre-built domain templates shipped with digit-gen:
+ *   hrms         - Human Resource Management System
+ *   inventory    - Inventory / stock management
+ *   project-mgmt - Project management
+ *   showcase     - All 22 field types demo (used for testing)
+ *
+ * Each template lives in templates/{name}/template.json.
+ * The template.json is a complete module config that is loaded as-is
+ * and passed to generateFromConfig — no merging or defaults needed.
+ *
+ * Templates provide a quick bootstrap: instead of writing a config from scratch,
+ * teams start from a domain template and customize fields/screens as needed.
+ */
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
 const TEMPLATES_DIR = path.join(__dirname, '../../templates');
+
+// Template author — shown in template listings
 const AUTHOR = 'JaganKumar <jagan.kumar@egov.org.in>';
+
+/**
+ * Loads and returns the config from a named template's template.json.
+ * Throws if the template directory or config file does not exist.
+ *
+ * @param {string} templateName - Template directory name (e.g. "hrms")
+ * @returns {Object} Parsed template config ready for generateFromConfig
+ */
 async function getTemplateConfig(templateName) {
   const templateDir = path.join(TEMPLATES_DIR, templateName);
   const configFile = path.join(templateDir, 'template.json');

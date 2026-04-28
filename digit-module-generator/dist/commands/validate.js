@@ -1,3 +1,22 @@
+/**
+ * validate command — `digit-gen validate`
+ *
+ * Validates a module config JSON without generating any files.
+ * Useful for CI pre-flight checks or when iterating on a config.
+ *
+ * Two-stage validation:
+ *   1. JSON parse — ensures the file is valid JSON
+ *   2. AJV schema + business logic — delegates to configValidator.js
+ *      (checks field types, screen/workflow consistency, i18n prefix format, etc.)
+ *
+ * Optional: --api-spec <path>
+ *   If provided, also loads the OpenAPI spec via apiSpecParser.js and
+ *   cross-checks field names — warns about fields present in one but
+ *   missing in the other (no error raised, only warnings).
+ *
+ * On failure: prints each validation error and a contextual suggestion
+ *   (e.g. "module.code must be kebab-case") to guide the user.
+ */
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
@@ -7,6 +26,14 @@ const {
 const {
   parseApiSpec
 } = require('../parsers/apiSpecParser');
+
+/**
+ * Entry point for `digit-gen validate`.
+ *
+ * @param {Object} options
+ * @param {string} options.config   - Path to the module config JSON to validate
+ * @param {string} [options.apiSpec] - Optional path to an OpenAPI spec for cross-validation
+ */
 async function validateConfig(options) {
   try {
     console.log(chalk.blue('\n🔍 Validating configuration...\n'));
@@ -22,6 +49,10 @@ async function validateConfig(options) {
     let config;
     try {
       config = await fs.readJson(configPath);
+      // Unwrap if config is nested under a "config" key (template.json format)
+      if (config.config) {
+        config = config.config;
+      }
       console.log(chalk.green(`✅ Configuration file loaded successfully`));
     } catch (error) {
       console.log(chalk.red(`❌ Invalid JSON in configuration file: ${error.message}`));

@@ -1,9 +1,38 @@
+/**
+ * templates command — `digit-gen templates`
+ *
+ * Lists and inspects the built-in pre-built templates.
+ * Delegates to templateManager.js for the actual template metadata.
+ *
+ * Sub-commands / modes:
+ *   (default)   Lists all available templates in a compact one-line format
+ *   --detailed  Shows each template in a bordered box with name, description,
+ *               category, version, author, and usage snippet
+ *   --validate <name>  Runs validateTemplate() and reports any schema errors
+ *
+ * Built-in templates (from templateManager.js):
+ *   hrms          — HR employee management with workflow
+ *   inventory     — Inventory/stock management without workflow
+ *   project-mgmt  — Project lifecycle management with workflow + inbox
+ *   showcase      — All 22 field types, all 6 screens, for demonstration
+ *
+ * Exported functions:
+ *   listTemplates(options)        — used by the `templates` CLI command
+ *   showTemplateInfo(templateName) — used by `digit-gen validate --template`
+ */
 const chalk = require('chalk');
 const boxen = require('boxen');
 const {
   listAvailableTemplates,
   validateTemplate
 } = require('../templates/templateManager');
+
+/**
+ * Entry point for `digit-gen templates`.
+ *
+ * @param {Object} options
+ * @param {boolean} [options.detailed] - Show full metadata box for each template
+ */
 async function listTemplates(options) {
   try {
     console.log(chalk.blue('\n📚 Available Templates\n'));
