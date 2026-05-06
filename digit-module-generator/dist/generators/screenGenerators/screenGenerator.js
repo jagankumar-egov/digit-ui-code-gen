@@ -50,7 +50,13 @@ Handlebars.registerHelper('kebabCase', str => {
 // "employeeName" → "EMPLOYEE_NAME"
 Handlebars.registerHelper('constantCase', str => {
   if (!str) return '';
-  return str.replace(/[A-Z]/g, letter => `_${letter}`).replace(/^_/, '').toUpperCase();
+  return str.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toUpperCase();
+});
+
+// "HRMS" → "hrms"
+Handlebars.registerHelper('lowerCase', str => {
+  if (!str) return '';
+  return str.toLowerCase();
 });
 
 // Logical helpers used in {{#if (eq type 'text')}} style conditionals in .hbs templates

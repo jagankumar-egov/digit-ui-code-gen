@@ -75,8 +75,7 @@ module.exports = {
       "react/jsx-runtime": path.resolve(__dirname, "node_modules/react/jsx-runtime.js"),
       "react-query": require.resolve("@tanstack/react-query"),
       // Add aliases for local packages to ensure proper resolution
-      "@egovernments/digit-ui-module-sample": path.resolve(__dirname, "packages/modules/sample/dist/main.js"),
-      "@egovernments/digit-ui-module-generator-css": path.resolve(__dirname, "packages/css/dist/index.css"),
+      "@egovernments/digit-ui-module-hrms": path.resolve(__dirname, "packages/modules/hrms"),
     },
     fallback: {
       fs: false,

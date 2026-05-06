@@ -149,7 +149,7 @@ async function updateWebPackageJson(webDir, packageName) {
     return;
   }
 
-  pkg.dependencies[packageName] = '1.0.0';
+  pkg.dependencies[packageName] = '0.0.0';
   await fs.writeJson(pkgPath, pkg, { spaces: 2 });
   console.log(chalk.green(`✅ Added ${packageName} to web/package.json`));
 }

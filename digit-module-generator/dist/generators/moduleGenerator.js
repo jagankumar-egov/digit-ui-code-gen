@@ -92,7 +92,8 @@ Handlebars.registerHelper('kebabCase', str => {
 
 // "employeeName" → "EMPLOYEE_NAME"
 Handlebars.registerHelper('constantCase', str => {
-  return str.replace(/[A-Z]/g, letter => `_${letter}`).replace(/^_/, '').toUpperCase();
+  if (!str) return '';
+  return str.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toUpperCase();
 });
 
 // Logical helpers for conditional blocks in templates
@@ -242,7 +243,7 @@ async function generatePackageJson(moduleDir, config, result) {
     "react-i18next": "15.0.0",
     "styled-components": "5.x",
     "@egovernments/digit-ui-svg-components": "2.0.0-dev-01",
-    "@egovernments/digit-ui-components": "2.0.0-dev-31"
+    "@egovernments/digit-ui-components": "2.0.0-dev-42"
   },
   "devDependencies": {
     "@babel/core": "^7.23.3",
@@ -283,49 +284,135 @@ async function generatePackageJson(moduleDir, config, result) {
  */
 async function generateWebpackConfig(moduleDir, config, result) {
   const kebabCode = config.module.code.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`).replace(/^-/, '').toLowerCase();
-  const template = `const path = require('path');
+  const template = `const path = require("path");
+const webpack = require("webpack");
+
+const isProduction = process.env.NODE_ENV === "production";
+const isDevelopment = !isProduction;
 
 module.exports = {
-  mode: 'development',
-  entry: './src/Module.js',
+  mode: isProduction ? "production" : "development",
+  cache: false,
+
+  entry: { index: "./src/Module.js" },
+
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'index.js',
+    filename: "[name].js",
+    chunkFilename: "[name].[contenthash:8].chunk.js",
+    path: path.resolve(__dirname, "dist"),
     library: {
       name: "@egovernments/digit-ui-module-${kebabCode}",
       type: "umd",
     },
+    globalObject: "this",
+    clean: true,
+    publicPath: "auto",
   },
+
+  resolve: {
+    extensions: [".js", ".jsx"],
+  },
+
+  optimization: {
+    usedExports: true,
+    sideEffects: false,
+    concatenateModules: isProduction,
+    minimize: isProduction,
+    runtimeChunk: false,
+    splitChunks: false,
+    moduleIds: isProduction ? "deterministic" : "named",
+  },
+
+  performance: {
+    maxAssetSize: 100000,
+    maxEntrypointSize: 100000,
+    hints: isProduction ? "warning" : false,
+  },
+
+  externals: {
+    // Core React ecosystem
+    react: "React",
+    "react-dom": "ReactDOM",
+    "react-router-dom": "react-router-dom",
+    "react-i18next": "react-i18next",
+    "@tanstack/react-query": "@tanstack/react-query",
+    // Redux ecosystem
+    "react-redux": "react-redux",
+    redux: "redux",
+    "redux-thunk": "redux-thunk",
+    // DIGIT UI cross-dependencies
+    "@egovernments/digit-ui-components": "@egovernments/digit-ui-components",
+    "@egovernments/digit-ui-react-components": "@egovernments/digit-ui-react-components",
+    "@egovernments/digit-ui-libraries": "@egovernments/digit-ui-libraries",
+    "@egovernments/digit-ui-svg-components": "@egovernments/digit-ui-svg-components",
+  },
+
   module: {
     rules: [
       {
-        test: /\\.jsx?$/,
+        test: /\\.(js|jsx)$/,
         exclude: /node_modules/,
         use: {
-          loader: 'babel-loader',
+          loader: "babel-loader",
           options: {
-            presets: ['@babel/preset-env', '@babel/preset-react']
-          }
-        }
+            cacheDirectory: true,
+            cacheCompression: false,
+            presets: [
+              [
+                "@babel/preset-env",
+                {
+                  targets: { esmodules: true },
+                  modules: false,
+                },
+              ],
+              [
+                "@babel/preset-react",
+                {
+                  runtime: "automatic",
+                },
+              ],
+            ],
+          },
+        },
       },
       {
-        test: /\\.css$/,
-        use: ['style-loader', 'css-loader']
-      }
-    ]
+        test: /\\.(png|jpe?g|gif|svg)$/,
+        type: "asset",
+        parser: {
+          dataUrlCondition: {
+            maxSize: 10 * 1024,
+          },
+        },
+        generator: {
+          filename: "images/[name].[hash][ext]",
+        },
+      },
+      {
+        test: /\\.(woff|woff2|eot|ttf|otf)$/,
+        type: "asset/resource",
+        generator: {
+          filename: "fonts/[name].[hash][ext]",
+        },
+      },
+    ],
   },
-  externals: {
-    react: 'react',
-    'react-dom': 'react-dom',
-    'react-router-dom': 'react-router-dom',
-    'react-i18next': 'react-i18next',
-    '@egovernments/digit-ui-components': '@egovernments/digit-ui-components',
-    '@egovernments/digit-ui-svg-components': '@egovernments/digit-ui-svg-components',
-    'styled-components': 'styled-components'
+
+  devtool: isProduction ? "hidden-source-map" : "cheap-module-source-map",
+
+  plugins: [
+    new webpack.DefinePlugin({
+      "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
+    }),
+    new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+    ...(isDevelopment ? [new webpack.HotModuleReplacementPlugin()] : []),
+  ],
+
+  stats: {
+    errorDetails: true,
+    children: false,
+    modules: false,
+    entrypoints: false,
   },
-  resolve: {
-    extensions: ['.js', '.jsx']
-  }
 };`;
   await fs.writeFile(path.join(moduleDir, 'webpack.config.js'), template);
   result.files.push('webpack.config.js');
@@ -395,13 +482,17 @@ async function generateMainModule(moduleDir, config, result) {
   const constantCode = config.module.code.replace(/[-\s]/g, '_').replace(/[A-Z]/g, letter => `_${letter}`).replace(/^_/, '').toUpperCase();
   const content = `import React, { useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import { Loader, ErrorBoundary } from "@egovernments/digit-ui-components";
+import { Loader, ErrorBoundary, lazyWithFallback } from "@egovernments/digit-ui-components";
 import { CustomisedHooks } from "./hooks";
 import { UICustomizations } from "./configs/UICustomizations";
 import ${entityName}Card from "./components/${entityName}Card";
 ${screenImports}
 
-const EmployeeApp = React.lazy(() => import("./pages/employee"));
+const EmployeeApp = lazyWithFallback(
+  () => import("./pages/employee"),
+  () => require("./pages/employee").default,
+  { loaderText: "Loading ${entityName} App..." }
+);
 
 const ${entityName}Module = React.memo(({ stateCode, userType, tenants }) => {
   const tenantId = Digit?.ULBService?.getCurrentTenantId();
@@ -630,11 +721,11 @@ import { EmployeeModuleCard } from "@egovernments/digit-ui-react-components";
 const ROLES = ${JSON.stringify(roles)};
 
 const ${entityName}Card = () => {
+  const { t } = useTranslation();
+
   if (!Digit.Utils.didEmployeeHasAtleastOneRole(ROLES)) {
     return null;
   }
-
-  const { t } = useTranslation();
 
   let links = [
 ${links}
@@ -680,7 +771,6 @@ export default ${entityName}Card;
  */
 async function generateHooksIndex(moduleDir, config, result) {
   const entityName = config.entity.name;
-  const camelEntity = entityName.charAt(0).toLowerCase() + entityName.slice(1);
   const hookNames = [`useCreate${entityName}`, `useUpdate${entityName}`, `useSearch${entityName}s`, `useGet${entityName}ById`];
   if (config.workflow && config.workflow.enabled) {
     hookNames.push(`use${entityName}Workflow`);
@@ -689,13 +779,13 @@ async function generateHooksIndex(moduleDir, config, result) {
   ${hookNames.join(',\n  ')}
 } from "./use${entityName}";
 
-const ${camelEntity}Hooks = {
+const ${entityName}Hooks = {
   ${hookNames.join(',\n  ')}
 };
 
 export const CustomisedHooks = {
   Hooks: {
-    ${camelEntity}: ${camelEntity}Hooks,
+    ${entityName}: ${entityName}Hooks,
   },
   Utils: {},
 };

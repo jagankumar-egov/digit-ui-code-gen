@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { Loader, ViewComposer } from "@egovernments/digit-ui-components";
+import ENDPOINTS from "../../services/apiEndpoints";
 
 const {{pascalCase config.entity.name}}ViewDetails = () => {
   const { t } = useTranslation();
@@ -9,7 +10,7 @@ const {{pascalCase config.entity.name}}ViewDetails = () => {
   const tenantId = Digit.ULBService.getCurrentTenantId();
 
   const reqCriteria = {
-    url: "{{config.api.search}}",
+    url: ENDPOINTS.{{constantCase config.entity.name}}.SEARCH,
     params: {
       tenantId: tenantId,
       limit: 10,

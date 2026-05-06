@@ -41,10 +41,9 @@
     "@babel/preset-react": "^7.26.3",
     "@egovernments/digit-ui-libraries": "2.0.0-dev-08",
     "@egovernments/digit-ui-module-core": "2.0.0-dev-08",
-    "@egovernments/digit-ui-react-components": "2.0.0-dev-09",
+    "@egovernments/digit-ui-react-components": "2.0.0-dev-11",
     "@egovernments/digit-ui-svg-components": "2.0.0-dev-01",
-    "@egovernments/digit-ui-components": "2.0.0-dev-32",
-    "@egovernments/digit-ui-module-sample": "1.0.0",
+    "@egovernments/digit-ui-components": "2.0.0-dev-42",
     "@tanstack/react-query": "^5.62.16",
     "babel-loader": "^9",
     "cross-env": "^7.0.3",
@@ -65,7 +64,7 @@
     "terser-brunch": "^4.1.0",
     "url": "^0.11.4",
     "web-vitals": "1.1.2",
-    "@egovernments/digit-ui-module-hrms": "1.0.0"
+    "@egovernments/digit-ui-module-health-hrms": "0.0.0"
   },
   "resolutions": {
     "**/@babel/runtime": "7.20.1",
@@ -82,13 +81,12 @@
     "start": "node start-dev.js",
     "start:dev": "node start-dev.js",
     "start:webpack-only": "webpack serve --config webpack.dev.js --port 3000",
-    "dev:packages": "concurrently \"npm run dev:css\" \"npm run dev:sample\"",
+    "dev:packages": "concurrently \"npm run dev:css\"",
     "dev:css": "cd packages/css && npm run start",
-    "dev:sample": "cd packages/modules/sample && npm run build:dev -- --watch",
     "build": "npm run build:packages && webpack --config webpack.prod.js",
     "build:prod": "npm run build:packages && webpack --config webpack.prod.js",
     "build:analyze": "npm run build:packages && ANALYZE=true webpack --config webpack.prod.js",
-    "build:packages": "cd packages/css && npm run build && cd ../modules/sample && npm run build",
+    "build:packages": "cd packages/css && npm run build",
     "clean": "rm -rf node_modules build dist && find packages -name node_modules -type d -exec rm -rf {} + 2>/dev/null || true",
     "cleancmd": "find . \\( -name 'node_modules' -o -name 'dist' -o -name 'build' \\) -type d -prune -exec rm -rf '{}' +"
   },

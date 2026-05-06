@@ -1,7 +1,7 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { Hooks } from "@egovernments/digit-ui-libraries";
-// import "@egovernments/digit-ui-module-generator-css";
+import "@egovernments/digit-ui-module-generator-css";
 // import { BrowserRouter } from "react-router-dom";
 
 import { initLibraries } from "@egovernments/digit-ui-libraries";
@@ -10,7 +10,7 @@ window.Digit.Hooks = Hooks;
 const DigitUILazy = lazy(() => import("@egovernments/digit-ui-module-core").then((module) => ({ default: module.DigitUI })));
 
 
-const enabledModules = ["Utilities", "Sample","HRMS"];
+const enabledModules = ["Utilities", "HRMS","FieldShowcase","HealthHrms"];
 
 const initTokens = (stateCode) => {
   const userType = window.sessionStorage.getItem("userType") || process.env.REACT_APP_USER_TYPE || "CITIZEN";
@@ -59,19 +59,11 @@ const MainApp = ({ stateCode, enabledModules }) => {
   useEffect(() => {
     initLibraries().then(async () => {
       try {
-        const { initSampleComponents } = await import("@egovernments/digit-ui-module-sample")
-        initSampleComponents();
-      } catch (error) {
-        console.log("Error loading modules:", error);
-        // Continue without modules if they fail to load
-      }
-      try {
-        const { initHRMSComponents } = await import("@egovernments/digit-ui-module-hrms")
+        const { initHRMSComponents } = await import("@egovernments/digit-ui-module-health-hrms")
         initHRMSComponents();
       } catch (error) {
-        console.log("Error loading Hrms module:", error);
+        console.log("Error loading HealthHrms module:", error);
       }
-
       setIsReady(true);
     });
   }, []);

@@ -34,7 +34,7 @@ Handlebars.registerHelper('camelCase', str => {
 });
 Handlebars.registerHelper('constantCase', str => {
   if (!str) return '';
-  return str.replace(/[A-Z]/g, letter => `_${letter}`).replace(/^_/, '').toUpperCase();
+  return str.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toUpperCase();
 });
 
 /**
@@ -67,28 +67,30 @@ function generateMainService(config) {
  * Uses DIGIT useCustomAPIHook and useCustomAPIMutationHook patterns
  */
 
+import ENDPOINTS from "../services/apiEndpoints";
+
 // API Request Configurations
 export const {{camelCase config.entity.name}}RequestConfigs = {
   create: {
-    url: "{{config.api.create}}",
+    url: ENDPOINTS.{{constantCase config.entity.name}}.CREATE,
     params: {},
     body: {},
     config: {
       enable: false,
     },
   },
-  
+
   update: {
-    url: "{{config.api.update}}",
+    url: ENDPOINTS.{{constantCase config.entity.name}}.UPDATE,
     params: {},
     body: {},
     config: {
       enable: false,
     },
   },
-  
+
   search: {
-    url: "{{config.api.search}}",
+    url: ENDPOINTS.{{constantCase config.entity.name}}.SEARCH,
     params: {},
     body: {},
     config: {
@@ -96,9 +98,9 @@ export const {{camelCase config.entity.name}}RequestConfigs = {
       select: (data) => data?.{{config.entity.name}}s || [],
     },
   },
-  
+
   view: {
-    url: "{{config.api.view}}",
+    url: ENDPOINTS.{{constantCase config.entity.name}}.VIEW,
     params: {},
     body: {},
     config: {
@@ -109,7 +111,7 @@ export const {{camelCase config.entity.name}}RequestConfigs = {
 
 {{#if config.workflow.enabled}}
   workflow: {
-    url: "/egov-workflow-v2/egov-wf/process/_transition",
+    url: ENDPOINTS.COMMON.WORKFLOW,
     params: {},
     body: {},
     config: {
@@ -199,7 +201,7 @@ export const use{{config.entity.name}}Workflow = () => {
 
 // Re-export transforms from utils for backwards compatibility
 // The actual transform logic lives in ../utils/transformers.js
-export { transformCreateData, transformUpdateData, transformSearchResponse, transformViewResponse } from '../utils/transformers';
+export { transformCreateData as transformCreate{{config.entity.name}}Data, transformUpdateData as transformUpdate{{config.entity.name}}Data, transformSearchResponse as transformSearch{{config.entity.name}}Response, transformViewResponse as transformView{{config.entity.name}}Response } from '../utils/transformers';
 
 // Export all hooks
 export default {

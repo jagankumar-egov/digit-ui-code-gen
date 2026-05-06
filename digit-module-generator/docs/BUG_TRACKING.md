@@ -169,7 +169,7 @@ import { CommonScreen, Loader } from "@egovernments/digit-ui-components";
 **Issue:**
 Generated package.json includes `@egovernments/digit-ui-react-components` in peerDependencies:
 ```javascript
-"@egovernments/digit-ui-react-components": "2.0.0-dev-08",
+"@egovernments/digit-ui-react-components": "2.0.0-dev-11",
 ```
 
 **Expected:**
@@ -179,7 +179,7 @@ Should only list `@egovernments/digit-ui-components` as dependency.
 Removed react-components from peerDependencies. Now only includes:
 ```javascript
 "@egovernments/digit-ui-svg-components": "2.0.0-dev-01",
-"@egovernments/digit-ui-components": "2.0.0-dev-31"
+"@egovernments/digit-ui-components": "2.0.0-dev-42"
 ```
 
 ---

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Card, Header, Loader, Button, InfoCard } from "@egovernments/digit-ui-components";
+import { Card, HeaderComponent, Loader, Button, AlertCard } from "@egovernments/digit-ui-components";
+import ENDPOINTS from "../../services/apiEndpoints";
 
 const {{pascalCase config.entity.name}}Custom = () => {
   const { t } = useTranslation();
@@ -17,7 +18,7 @@ const {{pascalCase config.entity.name}}Custom = () => {
   {{#if config.api.search}}
   // Optional: Fetch data from API
   const reqCriteria = {
-    url: "{{config.api.search}}",
+    url: ENDPOINTS.{{constantCase config.entity.name}}.SEARCH,
     params: {
       tenantId: tenantId,
       limit: 10,
@@ -42,20 +43,20 @@ const {{pascalCase config.entity.name}}Custom = () => {
 
   return (
     <div className="{{kebabCase config.entity.name}}-custom-container">
-      <Header>{t("{{toLocalizationKey config.entity.name config.i18n.prefix}}_CUSTOM_SCREEN")}</Header>
+      <HeaderComponent>{t("{{toLocalizationKey config.entity.name config.i18n.prefix}}_CUSTOM_SCREEN")}</HeaderComponent>
 
       <Card type="primary" className="{{kebabCase config.entity.name}}-custom-card">
         {isLoading ? (
           <Loader />
         ) : error ? (
-          <InfoCard
+          <AlertCard
             variant="error"
             text={t("{{toLocalizationKey 'ERROR_LOADING' config.i18n.prefix}}")}
           />
         ) : (
           <div className="{{kebabCase config.entity.name}}-custom-content">
             {/* Add your custom content here */}
-            <InfoCard
+            <AlertCard
               variant="default"
               text={t("{{toLocalizationKey 'CUSTOM_SCREEN_INFO' config.i18n.prefix}}")}
             />

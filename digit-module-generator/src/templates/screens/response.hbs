@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
-import { PanelCard, InfoCard, Button } from "@egovernments/digit-ui-components";
+import { PanelCard, AlertCard, Button } from "@egovernments/digit-ui-components";
 
 const {{pascalCase config.entity.name}}Response = () => {
   const { t } = useTranslation();
@@ -14,7 +14,7 @@ const {{pascalCase config.entity.name}}Response = () => {
       setResponseData(location.state.data);
     } else if (!location.state) {
       // Redirect if no state data
-      navigate(`/employee/{{kebabCase config.module.code}}/search`);
+      navigate(`/${window?.contextPath}/employee/{{lowerCase config.entity.name}}/search`);
     }
   }, [location.state]);
 
@@ -23,25 +23,25 @@ const {{pascalCase config.entity.name}}Response = () => {
   const entityId = responseData?.id || responseData?.{{config.entity.primaryKey}};
 
   const handleNavigation = (type) => {
-    const moduleCode = "{{kebabCase config.module.code}}";
-    
+    const moduleCode = "{{lowerCase config.entity.name}}";
+
     switch (type) {
       case "home":
-        navigate("/employee");
+        navigate(`/${window?.contextPath}/employee`);
         break;
       case "view":
         if (entityId) {
-          navigate(`/employee/${moduleCode}/view/${entityId}`);
+          navigate(`/${window?.contextPath}/employee/${moduleCode}/view/${entityId}`);
         }
         break;
       case "search":
-        navigate(`/employee/${moduleCode}/search`);
+        navigate(`/${window?.contextPath}/employee/${moduleCode}/search`);
         break;
       case "create":
-        navigate(`/employee/${moduleCode}/create`);
+        navigate(`/${window?.contextPath}/employee/${moduleCode}/create`);
         break;
       default:
-        navigate("/employee");
+        navigate(`/${window?.contextPath}/employee`);
     }
   };
 
@@ -57,17 +57,17 @@ const {{pascalCase config.entity.name}}Response = () => {
 
   // Main content for PanelCard
   const children = [
-    <InfoCard
+    <AlertCard
       variant={isResponseSuccess ? "success" : "error"}
-      className={"{{kebabCase config.entity.name}}-response-infocard"}
+      className={"{{lowerCase config.entity.name}}-response-infocard"}
       text={isResponseSuccess ? getSuccessMessage() : getErrorMessage()}
     />,
     
     // Additional details if success
     isResponseSuccess && responseData && (
-      <InfoCard
+      <AlertCard
         variant="default"
-        className={"{{kebabCase config.entity.name}}-details-infocard"}
+        className={"{{lowerCase config.entity.name}}-details-infocard"}
         text={
           <div>
             {entityNumber && (

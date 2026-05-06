@@ -1,7 +1,7 @@
 {
   "name": "HRMS Template",
   "description": "Human Resource Management System template for employee management",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "author": "JaganKumar <jagan.kumar@egov.org.in>",
   "category": "human-resources",
   "config": {
@@ -9,7 +9,7 @@
       "name": "Employee Management",
       "code": "hrms",
       "description": "Comprehensive employee management system",
-      "version": "1.0.0"
+      "version": "0.0.0"
     },
     "entity": {
       "name": "HRMS",
